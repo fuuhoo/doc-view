@@ -26,34 +26,34 @@ public class LocalSourceJarProcessor {
         Project project = originalClass.getProject();
 
         try {
-            LOG.info("开始转换类: " + originalClass.getQualifiedName());
+            LOG.info("start trans: " + originalClass.getQualifiedName());
 
             // 1. 查找本地source jar
             SourceJarInfo sourceJarInfo = findLocalSourceJar(originalClass, project);
             if (sourceJarInfo == null) {
-                LOG.warn("无法找到本地source jar: " + originalClass.getQualifiedName());
+                LOG.warn("can not find jar: " + originalClass.getQualifiedName());
                 return originalClass;
             }
 
             // 2. 提取源码到临时目录
             File extractedDir = extractSourceJarToProject(sourceJarInfo.getSourceJarFile(), project);
             if (extractedDir == null) {
-                LOG.warn("解压source jar失败: " + sourceJarInfo.getSourceJarFile().getAbsolutePath());
+                LOG.warn("unzip jar fail: " + sourceJarInfo.getSourceJarFile().getAbsolutePath());
                 return originalClass;
             }
 
             // 3. 重新解析源码文件
             PsiClass classWithComments = reloadClassFromSource(project, sourceJarInfo, extractedDir);
             if (classWithComments != null) {
-                LOG.info("成功转换类为带注释版本: " + classWithComments.getQualifiedName());
+                LOG.info("success: " + classWithComments.getQualifiedName());
                 return classWithComments;
             } else {
-                LOG.warn("重新解析源码失败: " + originalClass.getQualifiedName());
+                LOG.warn("resove source code fail: " + originalClass.getQualifiedName());
                 return originalClass;
             }
 
         } catch (Exception e) {
-            LOG.error("转换类时发生错误: " + originalClass.getQualifiedName(), e);
+            LOG.error("trans source code faild: " + originalClass.getQualifiedName(), e);
             return originalClass;
         }
     }
@@ -70,25 +70,25 @@ public class LocalSourceJarProcessor {
         // 获取准确的Maven artifact信息
         Optional<MavenArtifactInfo> artifactInfoOpt = getAccurateMavenArtifactInfo(psiClass, project);
         if (!artifactInfoOpt.isPresent()) {
-            LOG.warn("无法获取Maven artifact信息: " + qualifiedName);
+            LOG.warn("can not find Maven artifact info: " + qualifiedName);
             return null;
         }
 
         MavenArtifactInfo artifactInfo = artifactInfoOpt.get();
         String localRepoPath = getLocalMavenRepositoryPath(project);
         if (localRepoPath == null) {
-            LOG.warn("无法确定本地Maven仓库路径");
+            LOG.warn("can not find local Maven path");
             return null;
         }
 
         // 构建source jar路径
         File sourceJarFile = findSourceJarInRepository(localRepoPath, artifactInfo);
         if (sourceJarFile == null) {
-            LOG.warn("在本地仓库中找不到source jar: " + artifactInfo);
+            LOG.warn("can not find source.jar " + artifactInfo);
             return null;
         }
 
-        LOG.info("找到source jar: " + sourceJarFile.getAbsolutePath());
+        LOG.info("find source.jar : " + sourceJarFile.getAbsolutePath());
         return new SourceJarInfo(sourceJarFile, artifactInfo, qualifiedName);
     }
 
@@ -99,14 +99,14 @@ public class LocalSourceJarProcessor {
         // 方法1: 从类所在的JAR文件路径中提取准确信息（最可靠）
         Optional<MavenArtifactInfo> fromJarPath = extractArtifactInfoFromJarPath(psiClass, project);
         if (fromJarPath.isPresent()) {
-            LOG.info("从JAR路径找到artifact信息: " + fromJarPath.get());
+            LOG.info(" find JAR path artifact  info: " + fromJarPath.get());
             return fromJarPath;
         }
 
         // 方法2: 从项目依赖中查找
         Optional<MavenArtifactInfo> fromDependencies = findArtifactFromProjectDependencies(psiClass, project);
         if (fromDependencies.isPresent()) {
-            LOG.info("从依赖中找到artifact信息: " + fromDependencies.get());
+            LOG.info("find artifact info from depend: " + fromDependencies.get());
             return fromDependencies;
         }
 
@@ -421,7 +421,7 @@ public class LocalSourceJarProcessor {
             return extractedDir;
 
         } catch (IOException e) {
-            LOG.error("解压source jar失败: " + sourceJar.getAbsolutePath(), e);
+            LOG.error(" unzip source jar fail: " + sourceJar.getAbsolutePath(), e);
             return null;
         }
     }
@@ -436,13 +436,13 @@ public class LocalSourceJarProcessor {
         File sourceFile = new File(extractedDir, relativePath);
 
         if (!sourceFile.exists()) {
-            LOG.warn("源码文件不存在: " + sourceFile.getAbsolutePath());
+            LOG.warn("source faile not exist: " + sourceFile.getAbsolutePath());
             return null;
         }
 
         VirtualFile virtualSourceFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(sourceFile);
         if (virtualSourceFile == null) {
-            LOG.warn("无法找到虚拟文件: " + sourceFile.getAbsolutePath());
+            LOG.warn("vm source faile not exist: " + sourceFile.getAbsolutePath());
             return null;
         }
 
@@ -457,9 +457,9 @@ public class LocalSourceJarProcessor {
                 if (qualifiedName.equals(psiClass.getQualifiedName())) {
                     // 验证注释是否已加载
                     if (hasComments(psiClass)) {
-                        LOG.info("成功加载带注释的类: " + psiClass.getQualifiedName());
+                        LOG.info("load comment success: " + psiClass.getQualifiedName());
                     } else {
-                        LOG.warn("类没有注释: " + psiClass.getQualifiedName());
+                        LOG.warn("class has no comment: " + psiClass.getQualifiedName());
                     }
                     return psiClass;
                 }

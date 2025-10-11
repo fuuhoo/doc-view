@@ -12,6 +12,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
+import static com.liuzhihang.doc.view.utils.SpringPsiUtils.isExternal;
+
 /**
  * 参数处理工具
  *
@@ -62,6 +64,10 @@ public class ParamPsiUtils {
 
         // 剩下都是 PsiClass 类型处理
         PsiClass fieldClass = PsiUtil.resolveClassInClassTypeOnly(type);
+
+        if (isExternal(fieldClass)) {
+            fieldClass = LocalSourceJarProcessor.convertToClassWithComments(fieldClass);
+        }
 
         if (fieldClass == null) {
             return;
@@ -513,6 +519,11 @@ public class ParamPsiUtils {
     }
 
     public static void buildBodyList(@NotNull PsiClass psiClass, Map<String, PsiType> genericMap, Body parent) {
+
+
+        if (isExternal(psiClass)) {
+            psiClass = LocalSourceJarProcessor.convertToClassWithComments(psiClass);
+        }
 
         for (PsiField field : psiClass.getAllFields()) {
 
