@@ -422,6 +422,140 @@ public class DocViewUtils {
         return false;
     }
 
+
+    /**
+     * 判断字段是否可被更新
+     *
+     * @param field 字段
+     * @return 是否必填
+     */
+    public static boolean isUpdateAble(@NotNull PsiField field) {
+
+        return ApplicationManager.getApplication().runReadAction((Computable<Boolean>) () -> {
+            Settings settings = Settings.getInstance(field.getProject());
+
+            if (AnnotationUtil.isAnnotated(field, settings.getUpdateablebleFieldAnnotation(), 0)) {
+                return true;
+            }
+            return false;
+
+        });
+
+    }
+
+    /**
+     * 是否是数据库不存在的字段
+    */
+
+    public static boolean ifExist(@NotNull PsiField field) {
+        return ApplicationManager.getApplication().runReadAction((Computable<Boolean>) () -> {
+            Settings settings = Settings.getInstance(field.getProject());
+
+            if (AnnotationUtil.isAnnotated(field, settings.getExistFieldAnnotation(), 0)) {
+
+                PsiAnnotation tableFieldAnnotation = field.getAnnotation("com.baomidou.mybatisplus.annotation.TableField");
+                PsiAnnotationMemberValue typeHandlerValue = tableFieldAnnotation.findAttributeValue("exist");
+                if (typeHandlerValue != null) {
+                    String text = typeHandlerValue.getText();
+                    System.out.println("ifExist=============>"+field.getName()+";"+text);
+                    if(text.equals("false")){
+                        return false;
+                    }
+                }
+            }
+            return true;
+        });
+    }
+
+
+    /**
+     * 是否是主键
+     */
+
+    public static boolean ifIsId(@NotNull PsiField field) {
+        return ApplicationManager.getApplication().runReadAction((Computable<Boolean>) () -> {
+            Settings settings = Settings.getInstance(field.getProject());
+
+            if (AnnotationUtil.isAnnotated(field, settings.getIdFieldAnnotation(), 0)) {
+
+                PsiAnnotation idFieldAnnotation = field.getAnnotation("com.baomidou.mybatisplus.annotation.TableId");
+                if (idFieldAnnotation != null) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    }
+
+
+    /**
+     * 是否是映射成json
+     */
+
+    public static boolean isJson(@NotNull PsiField field) {
+
+        return ApplicationManager.getApplication().runReadAction((Computable<Boolean>) () -> {
+            Settings settings = Settings.getInstance(field.getProject());
+
+            if (AnnotationUtil.isAnnotated(field, settings.getJsonFieldAnnotation(), 0)) {
+                PsiAnnotation tableFieldAnnotation = field.getAnnotation("com.baomidou.mybatisplus.annotation.TableField");
+                PsiAnnotationMemberValue typeHandlerValue = tableFieldAnnotation.findAttributeValue("typeHandler");
+                if (typeHandlerValue != null) {
+                    String text = typeHandlerValue.getText();
+                    System.out.println("typeHandler============>"+field.getName()+";"+text);
+                    if(text.equals("JacksonTypeHandler.class")){
+                        return true;
+                    }
+
+                }
+            }
+            return false;
+
+        });
+    }
+
+    public static boolean isUpdateAble(@NotNull PsiParameter psiParameter) {
+        Settings settings = Settings.getInstance(psiParameter.getProject());
+
+        // 必填标识
+        if (AnnotationUtil.isAnnotated(psiParameter, settings.getUpdateablebleFieldAnnotation(), 0)) {
+            return true;
+        }
+        return  false;
+
+
+    }
+
+
+    /**
+     * 判断字段是否可作为筛选条件
+     *
+     * @param field 字段
+     * @return 是否必填
+     */
+    public static boolean isFilterAble(@NotNull PsiField field) {
+        return ApplicationManager.getApplication().runReadAction((Computable<Boolean>) () -> {
+            Settings settings = Settings.getInstance(field.getProject());
+
+            if (AnnotationUtil.isAnnotated(field, settings.getFilterableFieldAnnotation(), 0)) {
+                return true;
+            }
+            return false;
+
+        });
+
+    }
+
+    public static boolean isFilterAble(@NotNull PsiParameter psiParameter) {
+        Settings settings = Settings.getInstance(psiParameter.getProject());
+
+        // 必填标识
+        if (AnnotationUtil.isAnnotated(psiParameter, settings.getUpdateablebleFieldAnnotation(), 0)) {
+            return true;
+        }
+        return  false;
+    }
+
     /**
      * 获取字段名称，需要处理注解，有些字段自己指定了名称
      *

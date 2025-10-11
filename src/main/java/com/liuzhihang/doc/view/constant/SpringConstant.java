@@ -29,6 +29,7 @@ public final class SpringConstant {
     public static final String PATCH_MAPPING = "org.springframework.web.bind.annotation.PatchMapping";
 
     public static final String REQUEST_MAPPING = "org.springframework.web.bind.annotation.RequestMapping";
+    public static final String MYBATIS_TABLE_NAME = "com.baomidou.mybatisplus.annotation.TableName";
     public static final String MAPPING = "org.springframework.web.bind.annotation.Mapping";
 
     /**

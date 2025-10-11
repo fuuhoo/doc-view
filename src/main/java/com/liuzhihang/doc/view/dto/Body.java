@@ -52,7 +52,7 @@ public class Body {
     /**
      * version
      */
-    private String version;
+    private String version="无";
 
     /**
      * 初始化时创建集合
@@ -76,5 +76,23 @@ public class Body {
      * 是否是 map
      */
     private boolean isMap = false;
+
+
+    /**
+     * 是否是 json
+     */
+    private boolean isJson=false ;
+
+
+    /**
+     * 是否在数据库存在
+     */
+    private boolean exist=true ;
+
+    /**
+     * 是否是 json
+     */
+    private boolean isId ;
+
 
 }

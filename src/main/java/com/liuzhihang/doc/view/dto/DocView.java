@@ -109,7 +109,7 @@ public class DocView {
     private String reqFormExample;
 
     /**
-     * 请求参数类型 json/form
+     * 请求参数类型 json/form/form-data
      */
     private ContentTypeEnum contentType;
 

@@ -125,6 +125,46 @@ public class Settings implements PersistentStateComponent<Settings> {
         add(LombokConstant.NON_NULL);
     }};
 
+
+    /**
+     * 字段是否可筛选
+     */
+    private Set<String> filterableFieldAnnotation = new HashSet<>() {{
+        add("cn.siwei.fubin.swmybatisenhance.annotation.FilterFiled");
+    }};
+
+
+    /**
+     * 字段是否可更新
+     */
+    private Set<String> updateablebleFieldAnnotation = new HashSet<>() {{
+        add("cn.siwei.fubin.swmybatisenhance.annotation.Updatable");
+    }};
+
+
+    /**
+     * 字段是否在数据库
+     */
+    private Set<String> existFieldAnnotation = new HashSet<>() {{
+        add("com.baomidou.mybatisplus.annotation.TableField");
+    }};
+
+    /**
+     * 字段是否在数据库
+     */
+    private Set<String> idFieldAnnotation = new HashSet<>() {{
+        add("com.baomidou.mybatisplus.annotation.TableId");
+    }};
+
+
+    /**
+     * 字段是json
+     */
+    private Set<String> jsonFieldAnnotation = new HashSet<>() {{
+        add("com.baomidou.mybatisplus.annotation.TableField");
+    }};
+
+
     /**
      * 字段名称注解
      */

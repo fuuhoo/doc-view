@@ -45,6 +45,21 @@ public class DocViewParamData {
      */
     private Boolean required;
 
+
+    /**
+     * 是否可以作为筛选条件
+     */
+
+    private Boolean filterable=false;
+
+
+    /**
+     * 是否可更新
+     */
+
+    private Boolean updateable=false;
+
+
     /**
      * 参数示例
      */
@@ -63,7 +78,7 @@ public class DocViewParamData {
     /**
      * version
      */
-    private String version;
+    private String version="无";
 
     /**
      * 子
@@ -79,4 +94,22 @@ public class DocViewParamData {
      * 是否是 map
      */
     private boolean isMap = false;
+
+
+    /**
+     * 是否是 json
+     */
+    private boolean isJson ;
+
+
+    /**
+     * 是否在数据库存在
+     */
+    private boolean exist ;
+
+
+    /**
+     * 是否是 json
+     */
+    private boolean isId ;
 }

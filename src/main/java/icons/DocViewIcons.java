@@ -17,6 +17,9 @@ public interface DocViewIcons {
      */
     Icon DOC_VIEW = IconLoader.getIcon("/icons/markdown.svg", DocViewIcons.class);
 
+
+    Icon MARK_WODN = IconLoader.getIcon("/icons/file_markdown.svg", DocViewIcons.class);
+
     /**
      * 清理缓存
      */
@@ -86,5 +89,7 @@ public interface DocViewIcons {
      * httpAPI
      */
     Icon HTTP_API = IconLoader.getIcon("/icons/httpAPI.svg", DocViewIcons.class);
+
+    Icon SQL = IconLoader.getIcon("/icons/sql.svg", DocViewIcons.class);
 
 }

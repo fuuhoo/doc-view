@@ -1,22 +1,17 @@
 package com.liuzhihang.doc.view.utils;
 
 import com.intellij.codeInsight.AnnotationUtil;
+import com.intellij.lang.jvm.annotation.JvmAnnotationAttribute;
+import com.intellij.lang.jvm.annotation.JvmAnnotationAttributeValue;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.module.Module;
+import com.intellij.openapi.roots.ProjectFileIndex;
+import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.util.Computable;
-import com.intellij.psi.CommonClassNames;
-import com.intellij.psi.PsiAnnotation;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiClassType;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiField;
-import com.intellij.psi.PsiMethod;
-import com.intellij.psi.PsiModifier;
-import com.intellij.psi.PsiModifierList;
-import com.intellij.psi.PsiParameter;
-import com.intellij.psi.PsiPrimitiveType;
-import com.intellij.psi.PsiType;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.*;
 import com.intellij.psi.impl.java.stubs.index.JavaAnnotationIndex;
+import com.intellij.psi.impl.source.PsiClassReferenceType;
 import com.intellij.psi.javadoc.PsiDocComment;
 import com.intellij.psi.javadoc.PsiDocTag;
 import com.intellij.psi.search.GlobalSearchScope;
@@ -34,6 +29,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.liuzhihang.doc.view.constant.MethodConstant.DELETE;
@@ -41,6 +38,8 @@ import static com.liuzhihang.doc.view.constant.MethodConstant.GET;
 import static com.liuzhihang.doc.view.constant.MethodConstant.PATCH;
 import static com.liuzhihang.doc.view.constant.MethodConstant.POST;
 import static com.liuzhihang.doc.view.constant.MethodConstant.PUT;
+
+
 
 /**
  * Spring 相关操作工具类
@@ -50,6 +49,8 @@ import static com.liuzhihang.doc.view.constant.MethodConstant.PUT;
  */
 public class SpringPsiUtils extends ParamPsiUtils {
 
+
+    private static final Pattern UPPERCASE_PATTERN = Pattern.compile("[A-Z]");
     /**
      * 检查类或者接口是否是 Spring 接口
      *
@@ -179,6 +180,47 @@ public class SpringPsiUtils extends ParamPsiUtils {
         return path(annotation);
     }
 
+
+    /**
+     * 获取类名, 如果有基于myabits-plus的table-name注解从注解取
+     *
+     * @param psiClass 类
+     * @return 路径
+     */
+    @NotNull
+    public static String className(PsiClass psiClass) {
+        // controller 路径
+        PsiAnnotation annotation = AnnotationUtil.findAnnotation(psiClass, SpringConstant.MYBATIS_TABLE_NAME);
+
+        String stringValue = annotation.findAttributeValue("value") instanceof PsiLiteralValue ?
+                (String) ((PsiLiteralValue) annotation.findAttributeValue("value")).getValue() : null;
+
+        String name = psiClass.getName();
+        return stringValue == null ? name : stringValue;
+
+    }
+
+
+    @NotNull
+    public static String classComment(PsiClass psiClass) {
+
+        // 获取类的文档注释
+        PsiDocComment docComment = psiClass.getDocComment();
+
+        if (docComment != null) {
+            // 获取整个注释的文本
+            String commentText = docComment.getText();
+
+            return commentText.replaceAll("/\\*\\*|\\*/", "")  // 去除 /** 和 */
+                    .replaceAll("\\*", "")            // 去除行首的 *
+                    .replaceAll("^\\s+|\\s+$", "")   // 去除首尾空白
+                    .replaceAll("\\n\\s*", " ")      // 将多行合并为一行
+                    .trim();
+        } else {
+            return  "";
+        }
+    }
+
     /**
      * 根据方法获取请求路径, 就是方法注解中写的路径
      *
@@ -244,9 +286,28 @@ public class SpringPsiUtils extends ParamPsiUtils {
                 continue;
             }
 
+            PsiType type = parameter.getType();
+            System.out.println(type);
+            System.out.println(1);
+
+
+            PsiClass psiClass = PsiTypesUtil.getPsiClass(type);
+            if (psiClass == null) {
+                continue;
+            }
+
+            // 检查全限定类名是否为 MultipartFile
+            String qualifiedName = psiClass.getQualifiedName();
+
+            if ("org.springframework.web.multipart.MultipartFile".equals(qualifiedName)) {
+                return ContentTypeEnum.FORM_DATA;
+            }
+
+
             if (AnnotationUtil.isAnnotated(parameter, SpringConstant.REQUEST_BODY, 0)) {
                 return ContentTypeEnum.JSON;
             }
+
         }
         return ContentTypeEnum.FORM;
     }
@@ -400,7 +461,9 @@ public class SpringPsiUtils extends ParamPsiUtils {
         StringBuilder paramKV = new StringBuilder();
 
         for (Param param : requestParam) {
-            paramKV.append("&").append(param.getName()).append("=").append(param.getExample());
+            paramKV.append("\n").append(param.getName()).append(":").append(param.getExample());
+//            paramKV.append("&").append(param.getName()).append("=").append(param.getExample());
+
         }
 
         return paramKV.substring(1);
@@ -455,7 +518,14 @@ public class SpringPsiUtils extends ParamPsiUtils {
             } else if (InheritanceUtil.isInheritor(type, CommonClassNames.JAVA_UTIL_MAP)) {
                 list.add(buildPramFromParameter(psiMethod, parameter));
             } else {
+
                 PsiClass fieldClass = PsiUtil.resolveClassInClassTypeOnly(type);
+
+
+                if (isExternal(fieldClass)) {
+                    fieldClass = LocalSourceJarProcessor.convertToClassWithComments(fieldClass);
+                }
+
                 if (fieldClass == null) {
                     continue;
                 }
@@ -466,6 +536,7 @@ public class SpringPsiUtils extends ParamPsiUtils {
                     if (!paramNameSet.add(field.getName())) {
                         continue;
                     }
+                    System.out.println("字段类型:"+field.getType().getPresentableText());
                     if (field.getType() instanceof PsiPrimitiveType || FieldTypeConstant.FIELD_TYPE.containsKey(field.getType().getPresentableText())) {
                         list.add(buildPramFromField(field));
                     }
@@ -478,6 +549,14 @@ public class SpringPsiUtils extends ParamPsiUtils {
 
     }
 
+    static boolean isExternal(PsiClass psiClass) {
+        VirtualFile vf = psiClass.getContainingFile().getVirtualFile();
+        if (vf == null) return true; // 防御性返回
+        ProjectFileIndex index = ProjectRootManager.getInstance(psiClass.getProject()).getFileIndex();
+        // 关键：不在本项目的源码/测试/资源根里，就是“外部”
+        return !index.isInSource(vf) && !index.isInLibrarySource(vf);
+    }
+
     @NotNull
     private static Param buildPramFromField(PsiField field) {
 
@@ -487,15 +566,50 @@ public class SpringPsiUtils extends ParamPsiUtils {
         param.setName(field.getName());
         param.setDesc(DocViewUtils.fieldDesc(field));
         param.setType(field.getType().getPresentableText());
+        param.setUpdateable(DocViewUtils.isUpdateAble(field));
+        param.setFilterable(DocViewUtils.isFilterAble(field));
+
+        param.setJson(DocViewUtils.isJson(field));
+        param.setExist(DocViewUtils.ifExist(field));
 
         return param;
     }
 
+    /**
+     * 驼峰转下划线命名
+     */
+    public static String camel4underline(String param) {
+        if (param == null || param.isEmpty()) {
+            return "";
+        }
+
+        Matcher matcher = UPPERCASE_PATTERN.matcher(param);
+        StringBuffer result = new StringBuffer();
+
+        while (matcher.find()) {
+            matcher.appendReplacement(result, "_" + matcher.group().toLowerCase());
+        }
+
+        matcher.appendTail(result);
+
+        if (result.charAt(0) == '_') {
+            return result.substring(1);
+        }
+        return result.toString();
+    }
+
+
+    //直接从参数构建
     @NotNull
     private static Param buildPramFromParameter(PsiMethod psiMethod, PsiParameter parameter) {
 
         Param param = new Param();
+
         param.setRequired(DocViewUtils.isRequired(parameter));
+        param.setFilterable(DocViewUtils.isFilterAble(parameter));
+        param.setUpdateable(DocViewUtils.isUpdateAble(parameter));
+
+
         param.setName(parameter.getName());
         param.setType(parameter.getType().getPresentableText());
 

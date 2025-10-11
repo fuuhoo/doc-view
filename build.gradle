@@ -28,7 +28,7 @@ dependencies {
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
-    plugins = ['com.intellij.java', 'markdown']
+    plugins = ['com.intellij.java', 'markdown','org.jetbrains.idea.maven']
     pluginName = project.pluginName
     version = project.platformVersion
     type = project.platformType

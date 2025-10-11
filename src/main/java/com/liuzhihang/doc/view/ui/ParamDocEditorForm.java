@@ -18,6 +18,7 @@ import com.liuzhihang.doc.view.config.SettingsConfigurable;
 import com.liuzhihang.doc.view.dto.Body;
 import com.liuzhihang.doc.view.dto.DocViewData;
 import com.liuzhihang.doc.view.dto.DocViewParamData;
+import com.liuzhihang.doc.view.enums.ParamTypeEnum;
 import com.liuzhihang.doc.view.notification.DocViewNotification;
 import com.liuzhihang.doc.view.ui.treeview.ParamTreeTableView;
 import com.liuzhihang.doc.view.utils.DocViewUtils;
@@ -58,6 +59,9 @@ public class ParamDocEditorForm {
     private JScrollPane paramScrollPane;
 
     private JBPopup popup;
+
+
+    List<DocViewParamData> dataList;
 
     @NonNls
     public static final String DOC_VIEW_POPUP = "com.intellij.docview.param.editor.popup";
@@ -200,7 +204,37 @@ public class ParamDocEditorForm {
                 StringSelection selection = new StringSelection(format);
                 Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
                 clipboard.setContents(selection, selection);
-                DocViewNotification.notifyInfo(project, DocViewBundle.message("param.copy.success", psiClass.getName()));
+                DocViewNotification.notifyInfo(project, DocViewBundle.message("param.copy.success","Json", psiClass.getName()));
+                popup.cancel();
+            }
+        });
+
+
+        rightGroup.add(new AnAction("Copy as markdown", "Copy as markdown", DocViewIcons.MARK_WODN) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+
+                String s = DocViewData.paramMarkdown(dataList, ParamTypeEnum.REQUEST_PARAM).toString();
+                StringSelection selection = new StringSelection(s);
+                Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                clipboard.setContents(selection, selection);
+                DocViewNotification.notifyInfo(project, DocViewBundle.message("param.copy.success","markdown", psiClass.getName()));
+                popup.cancel();
+
+            }
+        });
+
+
+        rightGroup.add(new AnAction("Copy as SQL", "Copy as SQL", DocViewIcons.SQL) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+
+                System.out.println(psiClass);
+                String sql = DocViewData.toDDL(psiClass, dataList);
+                StringSelection selection = new StringSelection(sql);
+                Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                clipboard.setContents(selection, selection);
+                DocViewNotification.notifyInfo(project, DocViewBundle.message("param.copy.success","SQL", psiClass.getName()));
                 popup.cancel();
             }
         });
@@ -239,10 +273,12 @@ public class ParamDocEditorForm {
     private void initParamTable() {
 
         Body rootBody = new Body();
-        rootBody.setQualifiedNameForClassType(psiClass.getQualifiedName());
+        String qualifiedName = psiClass.getQualifiedName();
+        rootBody.setQualifiedNameForClassType(qualifiedName);
         ParamPsiUtils.buildBodyList(psiClass, null, rootBody);
 
-        List<DocViewParamData> dataList = DocViewData.buildBodyDataList(rootBody.getChildList());
+        List<Body> childList = rootBody.getChildList();
+        dataList = DocViewData.buildBodyDataList(childList);
 
         DefaultMutableTreeNode root = new DefaultMutableTreeNode();
 

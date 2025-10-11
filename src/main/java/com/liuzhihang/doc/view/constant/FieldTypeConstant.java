@@ -26,7 +26,7 @@ public final class FieldTypeConstant {
      * 包装类型 & String
      */
     public static final Set<String> PACKAGE_TYPE_SET = Sets.newHashSet("Byte", "Short", "Integer", "Long", "Float", "Double",
-            "Boolean", "String");
+            "Boolean", "String","List<String>","List<Integer>","List<Float>","List<Double>","List<Object>","List<Long>");
 
     static {
         // 包装数据类型
@@ -44,5 +44,14 @@ public final class FieldTypeConstant {
         FIELD_TYPE.put("LocalDate", null);
         FIELD_TYPE.put("LocalTime", null);
         FIELD_TYPE.put("LocalDateTime", null);
+        FIELD_TYPE.put("List<String>", null);
+        FIELD_TYPE.put("List<Integer>", null);
+        FIELD_TYPE.put("List<Float>", null);
+        FIELD_TYPE.put("List<Double>", null);
+        FIELD_TYPE.put("List<Object>", null);
+        FIELD_TYPE.put("List", null);
+        FIELD_TYPE.put("List<Long>", null);
+
+
     }
 }

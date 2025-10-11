@@ -13,7 +13,7 @@ public enum ContentTypeEnum {
 
     JSON("Content-Type", "application/json"),
     FORM("Content-Type", "application/x-www-form-urlencoded"),
-
+    FORM_DATA("Content-Type", "application/form-data"),
     ;
 
     ContentTypeEnum(String key, String value) {

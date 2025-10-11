@@ -72,6 +72,7 @@ public class SpringDocViewServiceImpl implements DocViewService {
 
             // 请求中的 form 参数, url 后面拼接的 kv
             docView.setReqParamList(SpringPsiUtils.buildFormParam(psiMethod));
+            //请求示例
             docView.setReqFormExample(SpringPsiUtils.reqParamKV(docView.getReqParamList()));
 
             if (contentType == ContentTypeEnum.JSON) {

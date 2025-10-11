@@ -10,7 +10,6 @@ import lombok.Data;
 @Data
 public class Param {
 
-
     /**
      * 参数的 psiElement
      */
@@ -34,6 +33,20 @@ public class Param {
      */
     private String desc;
 
+
+    /**
+     * 是否可作为筛选条件
+     */
+    private Boolean filterable;
+
+
+    /**
+     * 是否可更新
+     */
+
+    private Boolean updateable;
+
+
     /**
      * 类型
      */
@@ -48,5 +61,17 @@ public class Param {
     /**
      * version
      */
-    private String version;
+    private String version="无";
+
+
+    /**
+     * 是否是 json
+     */
+    private boolean isJson ;
+
+
+    /**
+     * 是否在数据库存在
+     */
+    private boolean exist ;
 }

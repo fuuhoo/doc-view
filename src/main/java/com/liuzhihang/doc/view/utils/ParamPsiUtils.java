@@ -42,7 +42,13 @@ public class ParamPsiUtils {
         body.setPsiElement(field);
         body.setType(type.getPresentableText());
         body.setDesc(DocViewUtils.fieldDesc(field));
+
+        body.setJson(DocViewUtils.isJson(field));
+        body.setExist(DocViewUtils.ifExist(field));
+        body.setId(DocViewUtils.ifIsId(field));
+
         body.setParent(parent);
+
 
         parent.getChildList().add(body);
         if (type instanceof PsiPrimitiveType || FieldTypeConstant.FIELD_TYPE.containsKey(type.getPresentableText())) {

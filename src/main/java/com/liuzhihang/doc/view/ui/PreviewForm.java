@@ -598,6 +598,7 @@ public class PreviewForm {
      */
     private void buildDoc() {
 
+        //生成文档列表
         docViewList = DocViewService.getInstance(psiClass.getProject(), psiClass).buildDoc(psiClass, psiMethod);
 
         docViewMap = docViewList.stream().collect(Collectors.toMap(DocView::getName, docView -> docView));

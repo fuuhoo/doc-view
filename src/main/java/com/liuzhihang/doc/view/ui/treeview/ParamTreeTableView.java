@@ -26,7 +26,7 @@ import java.util.Map;
 @Getter
 public class ParamTreeTableView extends TreeTableView {
 
-    // {"参数名", "类型", "必选", "描述"}
+    // {"参数名", "类型", "必选","可筛选", "描述"}
     public static final ColumnInfo[] COLUMN_INFOS = new ColumnInfo[]{
             new TreeColumnInfo("参数名 *") {
 
@@ -68,6 +68,45 @@ public class ParamTreeTableView extends TreeTableView {
                             return paramData.getRequired();
                         }
 
+                    }
+                    return o;
+                }
+
+                @Override
+                public int getWidth(JTable table) {
+                    return 80;
+                }
+            },
+            new ColumnInfo("可筛选") {
+                @Nullable
+                @Override
+                public Object valueOf(Object o) {
+                    if (o instanceof DefaultMutableTreeNode) {
+                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) o;
+                        if (node.getUserObject() instanceof DocViewParamData) {
+                            DocViewParamData paramData = (DocViewParamData) node.getUserObject();
+                            return paramData.getFilterable();
+                        }
+
+                    }
+                    return o;
+                }
+
+                @Override
+                public int getWidth(JTable table) {
+                    return 80;
+                }
+            },
+            new ColumnInfo("可更新") {
+                @Nullable
+                @Override
+                public Object valueOf(Object o) {
+                    if (o instanceof DefaultMutableTreeNode) {
+                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) o;
+                        if (node.getUserObject() instanceof DocViewParamData) {
+                            DocViewParamData paramData = (DocViewParamData) node.getUserObject();
+                            return paramData.getUpdateable();
+                        }
                     }
                     return o;
                 }
@@ -142,6 +181,10 @@ public class ParamTreeTableView extends TreeTableView {
             case 2:
                 return paramData.getRequired();
             case 3:
+                return paramData.getFilterable();
+            case 4:
+                return paramData.getUpdateable();
+            case 5:
                 return paramData.getDesc();
         }
         return "";
@@ -155,11 +198,18 @@ public class ParamTreeTableView extends TreeTableView {
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) tableModel.getRowValue(row);
         DocViewParamData paramData = (DocViewParamData) node.getUserObject();
 
-        // "参数名", "类型", "必选", "描述"
+        // "参数名", "类型", "必选",可筛选,可更新 "描述"
+
         if (column == 2) {
             paramData.setRequired(String.valueOf(value).equalsIgnoreCase("true"));
             modifiedMap.put(paramData.getPsiElement(), paramData);
         } else if (column == 3) {
+            paramData.setFilterable(String.valueOf(value).equalsIgnoreCase("true"));
+            modifiedMap.put(paramData.getPsiElement(), paramData);
+        }else if (column == 4) {
+            paramData.setUpdateable(String.valueOf(value).equalsIgnoreCase("true"));
+            modifiedMap.put(paramData.getPsiElement(), paramData);
+        }else if (column == 5) {
             paramData.setDesc(String.valueOf(value));
             modifiedMap.put(paramData.getPsiElement(), paramData);
         }
