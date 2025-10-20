@@ -40,7 +40,6 @@ import static com.liuzhihang.doc.view.constant.MethodConstant.POST;
 import static com.liuzhihang.doc.view.constant.MethodConstant.PUT;
 
 
-
 /**
  * Spring 相关操作工具类
  *
@@ -51,6 +50,7 @@ public class SpringPsiUtils extends ParamPsiUtils {
 
 
     private static final Pattern UPPERCASE_PATTERN = Pattern.compile("[A-Z]");
+
     /**
      * 检查类或者接口是否是 Spring 接口
      *
@@ -63,7 +63,8 @@ public class SpringPsiUtils extends ParamPsiUtils {
 
             Settings settings = Settings.getInstance(psiClass.getProject());
 
-            return AnnotationUtil.isAnnotated(psiClass, settings.getContainClassAnnotationName(), 0);
+            Set<String> containClassAnnotationName = settings.getContainClassAnnotationName();
+            return AnnotationUtil.isAnnotated(psiClass, containClassAnnotationName, 0);
         });
 
     }
@@ -217,7 +218,7 @@ public class SpringPsiUtils extends ParamPsiUtils {
                     .replaceAll("\\n\\s*", " ")      // 将多行合并为一行
                     .trim();
         } else {
-            return  "";
+            return "";
         }
     }
 
@@ -522,13 +523,14 @@ public class SpringPsiUtils extends ParamPsiUtils {
                 PsiClass fieldClass = PsiUtil.resolveClassInClassTypeOnly(type);
 
 
-                if (isExternal(fieldClass)) {
-                    fieldClass = LocalSourceJarProcessor.convertToClassWithComments(fieldClass);
-                }
-
-                if (fieldClass == null) {
+                if (fieldClass != null) {
+                    if (isExternal(fieldClass)) {
+                        fieldClass = LocalSourceJarProcessor.convertToClassWithComments(fieldClass);
+                    }
+                }else{
                     continue;
                 }
+
                 // 参数是类, get 请求只有一层
                 PsiField[] psiFields = fieldClass.getAllFields();
                 for (PsiField field : psiFields) {
@@ -536,7 +538,7 @@ public class SpringPsiUtils extends ParamPsiUtils {
                     if (!paramNameSet.add(field.getName())) {
                         continue;
                     }
-                    System.out.println("字段类型:"+field.getType().getPresentableText());
+                    System.out.println("字段类型:" + field.getType().getPresentableText());
                     if (field.getType() instanceof PsiPrimitiveType || FieldTypeConstant.FIELD_TYPE.containsKey(field.getType().getPresentableText())) {
                         list.add(buildPramFromField(field));
                     }
@@ -550,6 +552,9 @@ public class SpringPsiUtils extends ParamPsiUtils {
     }
 
     static boolean isExternal(PsiClass psiClass) {
+        if (psiClass == null) {
+            return false;
+        }
         VirtualFile vf = psiClass.getContainingFile().getVirtualFile();
         if (vf == null) return true; // 防御性返回
         ProjectFileIndex index = ProjectRootManager.getInstance(psiClass.getProject()).getFileIndex();

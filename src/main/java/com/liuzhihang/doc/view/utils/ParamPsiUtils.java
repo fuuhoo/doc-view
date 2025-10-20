@@ -59,19 +59,23 @@ public class ParamPsiUtils {
 
         // 提前替换字段比如 T -> UserDTO   List<T> -> List<UserDTO>
         // 如果是泛型, 且泛型字段是当前字段, 将当前字段类型替换为泛型类型, 替换完之后重新设置 body 的 type
+
         type = replaceFieldType(genericsMap, type);
-        body.setType(type.getPresentableText());
+        String presentableText = type.getPresentableText();
+        body.setType(presentableText);
 
         // 剩下都是 PsiClass 类型处理
         PsiClass fieldClass = PsiUtil.resolveClassInClassTypeOnly(type);
-
-        if (isExternal(fieldClass)) {
-            fieldClass = LocalSourceJarProcessor.convertToClassWithComments(fieldClass);
-        }
-
-        if (fieldClass == null) {
+        if(fieldClass!=null){
+            if (isExternal(fieldClass)) {
+                fieldClass = LocalSourceJarProcessor.convertToClassWithComments(fieldClass);
+            }
+        }else{
             return;
         }
+
+
+
 
         // 判断 childClass 是否已经在根节点到当前节点的链表上存在, 存在的话则不继续递归
         String qualifiedName = fieldClass.getQualifiedName();
@@ -146,6 +150,7 @@ public class ParamPsiUtils {
         if (type instanceof PsiPrimitiveType || FieldTypeConstant.FIELD_TYPE.containsKey(type.getPresentableText())) {
             return;
         }
+
         for (PsiField psiField : childClass.getAllFields()) {
             if (!DocViewUtils.isExcludeField(psiField)) {
                 buildBodyParam(psiField, fieldGenericsMap, parentBody, parentChildPair);
@@ -518,11 +523,19 @@ public class ParamPsiUtils {
         return root;
     }
 
+
+    /**
+     * 返回的body
+    */
     public static void buildBodyList(@NotNull PsiClass psiClass, Map<String, PsiType> genericMap, Body parent) {
 
 
-        if (isExternal(psiClass)) {
-            psiClass = LocalSourceJarProcessor.convertToClassWithComments(psiClass);
+        if(psiClass!=null) {
+            if (isExternal(psiClass)) {
+                psiClass = LocalSourceJarProcessor.convertToClassWithComments(psiClass);
+            }
+        }else{
+            return;
         }
 
         for (PsiField field : psiClass.getAllFields()) {

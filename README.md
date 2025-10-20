@@ -1,4 +1,13 @@
 Doc View
+
+调试:
+![img.png](img.png)
+
+
+
+打包：
+
+![img_1.png](img_1.png)
 =======
 
 [![JetBrains Plugins](https://img.shields.io/jetbrains/plugin/v/15305-doc-view.svg)](https://plugins.jetbrains.com/plugin/15305-doc-view)
