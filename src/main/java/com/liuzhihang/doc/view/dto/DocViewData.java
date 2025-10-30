@@ -119,10 +119,13 @@ public class DocViewData {
         this.requestParamDataList = paramDataList(docView.getReqParamList());
         this.requestParam = paramMarkdown(requestParamDataList, ParamTypeEnum.REQUEST_PARAM);
 
+
+        //请求参数
         this.requestBodyDataList = buildBodyDataList(docView.getReqBody().getChildList());
         this.requestBody = settings.getSeparateParam() ? separateParamMarkdown(requestBodyDataList) : paramMarkdown(requestBodyDataList, ParamTypeEnum.REQUEST_BODY);
         this.requestExample = requestExample(docView);
 
+        //返回参数
         this.responseParamDataList = buildBodyDataList(docView.getRespBody().getChildList());
         this.responseParam = settings.getSeparateParam() ? separateParamMarkdown(responseParamDataList) : paramMarkdown(responseParamDataList,ParamTypeEnum.RESPONSE_PARAM);
         this.responseExample = respBodyExample(docView.getRespExample());
@@ -240,6 +243,8 @@ public class DocViewData {
         }
     }
 
+
+    //生成markdown
     public static String markdownText(Project project, DocView docView) {
 
         DocViewData docViewData = new DocViewData(docView);
@@ -481,7 +486,7 @@ public class DocViewData {
     }
 
     /**
-     * 递归 body 生成 List<ParamData>
+     * 请求参数或者返回参数都在这
      *
      * @param bodyList
      * @param prefixSymbol1,

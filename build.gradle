@@ -31,7 +31,9 @@ intellij {
     plugins = ['com.intellij.java', 'markdown','org.jetbrains.idea.maven']
     pluginName = project.pluginName
     version = project.platformVersion
-    type = project.platformType
+    type.set("IC") // 使用社区版，不需要激活
+
+//    type = project.platformType
     downloadSources = true
     updateSinceUntilBuild = false
     buildSearchableOptions.enabled = false
@@ -63,4 +65,29 @@ changelog {
 
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
+
 }
+
+//// 配置 runIde 任务
+//tasks.withType(org.jetbrains.intellij.tasks.RunIdeTask).configureEach {
+//    runIde {
+//        systemProperty "idea.is.internal", "true"
+//        systemProperty "idea.debug.mode", "true"
+//        // 启用详细日志
+//        systemProperty "idea.log.debug.categories", "#com.siwe.fubin"
+//    }
+//
+//    // 可选：使用主 IDE 的配置（如果希望共享插件和设置）
+//    // systemProperty "idea.config.path", System.getProperty("idea.config.path")
+//    // systemProperty "idea.plugins.path", System.getProperty("idea.plugins.path")
+//}
+
+//runIde {
+//    // 禁用所有非核心插件
+//    systemProperty "idea.plugins.compatible", "false"
+//    systemProperty "idea.load.plugins", "false"
+//    // 最小化启动
+//    systemProperty "idea.classpath.index.enabled", "false"
+//    systemProperty "idea.config.path", project.buildDir.path + "/config"
+//    systemProperty "idea.system.path", project.buildDir.path + "/system"
+//}

@@ -23,7 +23,7 @@ import static com.liuzhihang.doc.view.utils.SpringPsiUtils.isExternal;
 public class ParamPsiUtils {
 
     /**
-     * 生成 body
+     * 生成 body，生成响应也是在这递归的
      *
      * @param field       字段
      * @param genericsMap key 是泛型 value 是对应的类型
@@ -31,7 +31,7 @@ public class ParamPsiUtils {
      */
     public static void buildBodyParam(PsiField field, Map<String, PsiType> genericsMap, Body parent, Map<String, Boolean> parentChildPair) {
 
-        String pair = parent.getQualifiedNameForClassType() + "_" + field.getName();
+        String pair = parent.getType() + "_" + field.getName();
         if (parentChildPair.containsKey(pair)) {
             return;
         }
@@ -73,9 +73,6 @@ public class ParamPsiUtils {
         }else{
             return;
         }
-
-
-
 
         // 判断 childClass 是否已经在根节点到当前节点的链表上存在, 存在的话则不继续递归
         String qualifiedName = fieldClass.getQualifiedName();
@@ -150,6 +147,8 @@ public class ParamPsiUtils {
         if (type instanceof PsiPrimitiveType || FieldTypeConstant.FIELD_TYPE.containsKey(type.getPresentableText())) {
             return;
         }
+
+        PsiField[] allFields = childClass.getAllFields();
 
         for (PsiField psiField : childClass.getAllFields()) {
             if (!DocViewUtils.isExcludeField(psiField)) {
@@ -529,7 +528,6 @@ public class ParamPsiUtils {
     */
     public static void buildBodyList(@NotNull PsiClass psiClass, Map<String, PsiType> genericMap, Body parent) {
 
-
         if(psiClass!=null) {
             if (isExternal(psiClass)) {
                 psiClass = LocalSourceJarProcessor.convertToClassWithComments(psiClass);
@@ -544,6 +542,7 @@ public class ParamPsiUtils {
                 continue;
             }
 
+            //真正执行的在这
             ParamPsiUtils.buildBodyParam(field, genericMap, parent, new HashMap<>());
         }
 

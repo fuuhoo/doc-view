@@ -91,6 +91,8 @@ public class SpringDocViewServiceImpl implements DocViewService {
 
         PsiType returnType = psiMethod.getReturnType();
         if (returnType != null && returnType.isValid() && !returnType.equalsToText(VOID)) {
+
+            //构造返回body
             docView.setRespBody(ParamPsiUtils.buildRespBody(returnType));
             docView.setRespExample(ParamPsiUtils.getRespBodyJson(returnType));
         }
