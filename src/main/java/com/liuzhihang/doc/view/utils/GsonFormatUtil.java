@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonWriter;
+import com.liuzhihang.doc.view.config.JacksonAnnotationExclusionStrategy;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -31,7 +32,11 @@ public class GsonFormatUtil {
 
     public static String gsonFormat(Object src) {
 
-        Gson gson = new GsonBuilder().serializeNulls().create();
+//        Gson gson = new GsonBuilder().serializeNulls().create();
+
+        Gson gson = new GsonBuilder()
+                .setExclusionStrategies(new JacksonAnnotationExclusionStrategy())
+                .create();
 
         return gsonFormat(gson, src);
     }

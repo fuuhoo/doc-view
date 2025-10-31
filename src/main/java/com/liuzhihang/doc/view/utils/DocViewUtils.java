@@ -276,7 +276,33 @@ public class DocViewUtils {
 
             // 排除部分注解的字段
             if (AnnotationUtil.isAnnotated(psiField, settings.getExcludeFieldAnnotation(), 0)) {
+
                 return true;
+            }
+
+            PsiAnnotation jsonProperty = psiField.getAnnotation("com.fasterxml.jackson.annotation.JsonIgnore");
+
+
+            //处理忽略字段
+            // 1. 什么都没写
+            if (jsonProperty != null) {
+                // 2. 取 access = JsonProperty.Access.xxx
+                PsiAnnotationMemberValue accessValue =
+                        jsonProperty.findAttributeValue("access");
+                // 2.1 根本没写 access 属性
+                if (accessValue == null || accessValue instanceof PsiReferenceExpression == false) {
+
+                    return true;
+                }else {
+                    // 2.2 拿到枚举常量名
+                    String enumConst = ((PsiReferenceExpression) accessValue).getReferenceName();
+                    switch (enumConst) {
+                        case "WRITE_ONLY":
+                            return  true;
+                        default:
+                            System.out.println("默认读写");
+                    }
+                }
             }
 
             PsiClass containingClass = psiField.getContainingClass();

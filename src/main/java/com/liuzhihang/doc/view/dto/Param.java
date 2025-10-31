@@ -74,4 +74,18 @@ public class Param {
      * 是否在数据库存在
      */
     private boolean exist ;
+
+
+    /**
+     * 是否忽略输入
+     */
+    private boolean ifIgnoreRead=false ;
+
+
+    /**
+     * 是否忽略输出
+     */
+    private boolean ifIgnoreWrite=false ;
+
+
 }

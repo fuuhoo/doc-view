@@ -120,6 +120,7 @@ public class CustomPsiUtils {
         for (PsiTypeParameter psiTypeParameter : substitutionMap.keySet()) {
             PsiType psiType = substitutionMap.get(psiTypeParameter);
             if (psiType instanceof PsiClassType) {
+                System.out.println("name===========>"+psiTypeParameter.getName());
                 hashMap.put(psiTypeParameter.getName(), psiType);
             }
         }

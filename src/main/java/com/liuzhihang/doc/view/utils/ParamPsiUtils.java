@@ -24,6 +24,7 @@ public class ParamPsiUtils {
 
     /**
      * 生成 body，生成响应也是在这递归的
+     * 核心方法
      *
      * @param field       字段
      * @param genericsMap key 是泛型 value 是对应的类型
@@ -37,6 +38,7 @@ public class ParamPsiUtils {
         }
         parentChildPair.put(pair, true);
 
+
         PsiType type = field.getType();
         Body body = new Body();
         body.setRequired(DocViewUtils.isRequired(field));
@@ -44,6 +46,37 @@ public class ParamPsiUtils {
         body.setPsiElement(field);
         body.setType(type.getPresentableText());
         body.setDesc(DocViewUtils.fieldDesc(field));
+
+
+        //body处理jsonignore
+        PsiAnnotation jsonProperty = field.getAnnotation("com.fasterxml.jackson.annotation.JsonIgnore");
+
+        // 1. 什么都没写
+        if (jsonProperty != null) {
+            // 2. 取 access = JsonProperty.Access.xxx
+            PsiAnnotationMemberValue accessValue =
+                    jsonProperty.findAttributeValue("access");
+            // 2.1 根本没写 access 属性
+            if (accessValue == null || accessValue instanceof PsiReferenceExpression == false) {
+                body.setIfIgnoreRead(true);
+                body.setIfIgnoreWrite(true);
+            }else {
+                // 2.2 拿到枚举常量名
+                String enumConst = ((PsiReferenceExpression) accessValue).getReferenceName();
+
+                switch (enumConst) {
+                    case "READ_ONLY":
+                        body.setIfIgnoreWrite(true);
+                        break;
+                    case "WRITE_ONLY":
+                        body.setIfIgnoreRead(true);
+                        break;
+                    default:
+                        System.out.println("默认读写");
+                }
+            }
+        }
+
 
         body.setJson(DocViewUtils.isJson(field));
         body.setExist(DocViewUtils.ifExist(field));
@@ -66,11 +99,11 @@ public class ParamPsiUtils {
 
         // 剩下都是 PsiClass 类型处理
         PsiClass fieldClass = PsiUtil.resolveClassInClassTypeOnly(type);
-        if(fieldClass!=null){
+        if (fieldClass != null) {
             if (isExternal(fieldClass)) {
                 fieldClass = LocalSourceJarProcessor.convertToClassWithComments(fieldClass);
             }
-        }else{
+        } else {
             return;
         }
 
@@ -329,6 +362,8 @@ public class ParamPsiUtils {
         // 设置当前类的类型
         qualifiedNameList.add(psiClass.getQualifiedName());
         for (PsiField field : psiClass.getAllFields()) {
+
+
             if (DocViewUtils.isExcludeField(field)) {
                 continue;
             }
@@ -525,14 +560,14 @@ public class ParamPsiUtils {
 
     /**
      * 返回的body
-    */
+     */
     public static void buildBodyList(@NotNull PsiClass psiClass, Map<String, PsiType> genericMap, Body parent) {
 
-        if(psiClass!=null) {
+        if (psiClass != null) {
             if (isExternal(psiClass)) {
                 psiClass = LocalSourceJarProcessor.convertToClassWithComments(psiClass);
             }
-        }else{
+        } else {
             return;
         }
 
@@ -549,6 +584,7 @@ public class ParamPsiUtils {
     }
 
 
+    //响应数据的json
     @NotNull
     public static String getRespBodyJson(PsiType returnType) {
 
@@ -592,9 +628,7 @@ public class ParamPsiUtils {
                 } else {
 
                     Map<String, PsiType> genericsMap = CustomPsiUtils.getGenericsMap(psiClassType);
-
                     Map<String, Object> fieldMap = ParamPsiUtils.getFieldsAndDefaultValue(psiClass, genericsMap);
-
                     return GsonFormatUtil.gsonFormat(fieldMap);
                 }
             }

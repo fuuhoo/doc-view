@@ -90,9 +90,21 @@ public class Body {
     private boolean exist=true ;
 
     /**
-     * 是否是 json
+     * 是否是 id
      */
     private boolean isId ;
+
+
+    /**
+     * 是否忽略输入
+     */
+    private boolean ifIgnoreRead=false ;
+
+
+    /**
+     * 是否忽略输出
+     */
+    private boolean ifIgnoreWrite=false ;
 
 
 }

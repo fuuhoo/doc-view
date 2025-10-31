@@ -196,6 +196,8 @@ public class Settings implements PersistentStateComponent<Settings> {
         add("org.springframework.beans.factory.annotation.Autowired");
         add("org.apache.dubbo.config.annotation.Reference");
         add("org.apache.dubbo.config.annotation.DubboReference");
+
+//        add("com.fasterxml.jackson.annotation.JsonIgnore");
     }};
 
     /**

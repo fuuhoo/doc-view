@@ -112,4 +112,18 @@ public class DocViewParamData {
      * 是否是 json
      */
     private boolean isId ;
+
+
+
+    /**
+     * 是否忽略输入
+     */
+    private boolean ifIgnoreRead=false ;
+
+
+    /**
+     * 是否忽略输出
+     */
+    private boolean ifIgnoreWrite=false ;
+
 }

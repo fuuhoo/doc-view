@@ -74,7 +74,7 @@ public class DocViewData {
     private final String requestParam;
 
     /**
-     * 请求参数
+     * 请求body参数？
      */
     private final List<DocViewParamData> requestBodyDataList;
 
@@ -118,7 +118,6 @@ public class DocViewData {
 
         this.requestParamDataList = paramDataList(docView.getReqParamList());
         this.requestParam = paramMarkdown(requestParamDataList, ParamTypeEnum.REQUEST_PARAM);
-
 
         //请求参数
         this.requestBodyDataList = buildBodyDataList(docView.getReqBody().getChildList());
@@ -270,6 +269,8 @@ public class DocViewData {
             return "";
         }
 
+
+
         if(paramType.equals(ParamTypeEnum.REQUEST_PARAM) || paramType.equals(ParamTypeEnum.REQUEST_BODY)) {
 
             return "|参数名|类型|必选|可筛选|可更新|描述|版本|\n"
@@ -283,7 +284,7 @@ public class DocViewData {
     }
 
     /**
-     * 切分多个展示
+     * 切分多个展示.多个实体
      */
     private static String separateParamMarkdown(List<DocViewParamData> dataList) {
         if (CollectionUtils.isEmpty(dataList)) {
@@ -295,6 +296,9 @@ public class DocViewData {
         builder.append("|参数名|类型|必选|可筛选|可更新|描述|版本|\n")
                 .append("|:-----|:-----|:-----|:-----|:-----|:-----|:-----|\n");
         for (DocViewParamData data : dataList) {
+            if(data.isIfIgnoreRead()){
+                continue;
+            }
             builder.append("|").append(data.getName())
                     .append("|").append(data.getType())
                     .append("|").append(data.getRequired() ? "是" : "否")
@@ -359,6 +363,7 @@ public class DocViewData {
         StringBuilder builder = new StringBuilder();
 
 
+        //请求参数
         if(paramType.equals(ParamTypeEnum.REQUEST_PARAM) || paramType.equals(ParamTypeEnum.REQUEST_BODY)) {
             for (DocViewParamData data : dataList) {
                 builder.append("|").append(data.getPrefixSymbol1()).append(data.getPrefixSymbol2()).append(data.getName())
@@ -375,7 +380,9 @@ public class DocViewData {
             }
         }else{
 
+            //返回参数
             for (DocViewParamData data : dataList) {
+
                 builder.append("|").append(data.getPrefixSymbol1()).append(data.getPrefixSymbol2()).append(data.getName())
                         .append("|").append(data.getType())
                         .append("|").append(data.getRequired() ? "是" : "否")
@@ -488,6 +495,7 @@ public class DocViewData {
     /**
      * 请求参数或者返回参数都在这
      *
+     * body转DocViewParamData
      * @param bodyList
      * @param prefixSymbol1,
      * @param prefixSymbol2
@@ -510,6 +518,8 @@ public class DocViewData {
             data.setJson(body.isJson());
             data.setExist(body.isExist());
             data.setId(body.isId());
+            data.setIfIgnoreWrite(body.isIfIgnoreWrite());
+            data.setIfIgnoreRead(body.isIfIgnoreRead());
 
             data.setDesc(StringUtils.isNotBlank(body.getDesc()) ? body.getDesc() : "");
 

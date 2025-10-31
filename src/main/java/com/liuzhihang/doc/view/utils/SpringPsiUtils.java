@@ -421,6 +421,7 @@ public class SpringPsiUtils extends ParamPsiUtils {
 
     /**
      * 请求对象的 Json 格式
+     * 请求对象转json
      *
      * @param parameter 参数
      * @return json 字符串
