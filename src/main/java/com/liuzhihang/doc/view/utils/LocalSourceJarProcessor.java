@@ -563,6 +563,11 @@ import java.util.jar.JarFile;
 public class LocalSourceJarProcessor {
     private static final Logger LOG = Logger.getInstance(LocalSourceJarProcessor.class);
 
+
+    private  static   List<Project>  projectList=new ArrayList<>();
+    private  static   List<File>  extractedDirList=new ArrayList<>();
+
+
     // 缓存已标记的源码目录，避免重复标记
     private static final Set<String> markedSourceRoots = new HashSet<>();
 
@@ -571,7 +576,7 @@ public class LocalSourceJarProcessor {
      */
     public static PsiClass convertToClassWithComments(@NotNull PsiClass originalClass) {
         Project project = originalClass.getProject();
-
+        File extractedDir = null;
         try {
             LOG.info("start trans: " + originalClass.getQualifiedName());
 
@@ -583,7 +588,7 @@ public class LocalSourceJarProcessor {
             }
 
             // 2. 提取源码到临时目录
-            File extractedDir = extractSourceJarToProject(sourceJarInfo.getSourceJarFile(), project);
+             extractedDir = extractSourceJarToProject(sourceJarInfo.getSourceJarFile(), project);
             if (extractedDir == null) {
                 LOG.warn("unzip jar fail: " + sourceJarInfo.getSourceJarFile().getAbsolutePath());
                 return originalClass;
@@ -605,6 +610,15 @@ public class LocalSourceJarProcessor {
         } catch (Exception e) {
             LOG.error("trans source code faild: " + originalClass.getQualifiedName(), e);
             return originalClass;
+        }finally {
+            System.out.println("extractedDir=====================");
+            // 5. 直接取消源码目录标记
+            if (extractedDir != null) {
+                projectList.add(project);
+                extractedDirList.add(extractedDir);
+
+//                unmarkSourceRootDirectly(project, extractedDir);
+            }
         }
     }
 
@@ -1231,5 +1245,134 @@ public class LocalSourceJarProcessor {
         public String toString() {
             return groupId + ":" + artifactId + ":" + version;
         }
+    }
+
+
+    /**
+     * q取消所有的标记源码
+    */
+    public static void unmarkAllSourceRootDirectly() {
+
+        Integer ii=0;
+        for (Project project : projectList) {
+            File file = extractedDirList.get(ii);
+            unmarkSourceRootDirectly(project,file);
+        }
+        projectList.clear();
+        extractedDirList.clear();
+
+    }
+
+    /**
+     * 直接取消对指定目录的源码标记
+     */
+    public static void unmarkSourceRootDirectly(Project project, File extractedDir) {
+        String dirPath = extractedDir.getAbsolutePath();
+
+        if (!markedSourceRoots.contains(dirPath)) {
+            LOG.info("Directory is not marked as source root: " + dirPath);
+            return;
+        }
+
+        com.intellij.openapi.application.ApplicationManager.getApplication().runWriteAction(() -> {
+            try {
+                Module[] modules = ModuleManager.getInstance(project).getModules();
+                boolean removed = false;
+
+                for (Module module : modules) {
+                    if (removeSourceRootFromModule(module, extractedDir)) {
+                        removed = true;
+                        LOG.info("Successfully unmarked source root in module: " + module.getName());
+                    }
+                }
+
+                if (removed) {
+                    markedSourceRoots.remove(dirPath);
+                    LOG.info("Source directory unmarked successfully: " + dirPath);
+                }
+
+            } catch (Exception e) {
+                LOG.error("Error unmarking directory as source root: " + dirPath, e);
+            }
+        });
+    }
+
+    /**
+     * 从模块中移除源码根目录
+     */
+    private static boolean removeSourceRootFromModule(Module module, File extractedDir) {
+        ModifiableRootModel modifiableModel = ModuleRootManager.getInstance(module).getModifiableModel();
+
+        try {
+            VirtualFile virtualDir = LocalFileSystem.getInstance().findFileByIoFile(extractedDir);
+            if (virtualDir == null) {
+                return false;
+            }
+
+            boolean removed = false;
+            for (ContentEntry contentEntry : modifiableModel.getContentEntries()) {
+                SourceFolder[] sourceFolders = contentEntry.getSourceFolders();
+                for (SourceFolder sourceFolder : sourceFolders) {
+                    if (sourceFolder.getFile() != null &&
+                            sourceFolder.getFile().equals(virtualDir)) {
+                        contentEntry.removeSourceFolder(sourceFolder);
+                        removed = true;
+                        break;
+                    }
+                }
+                if (removed) break;
+            }
+
+            if (removed) {
+                modifiableModel.commit();
+                return true;
+            } else {
+                modifiableModel.dispose();
+                return false;
+            }
+
+        } catch (Exception e) {
+            LOG.error("Failed to remove source root from module: " + module.getName(), e);
+            modifiableModel.dispose();
+            return false;
+        }
+    }
+
+    /**
+     * 批量取消所有已标记的源码目录
+     */
+    public static void unmarkAllSourceRoots(Project project) {
+        if (markedSourceRoots.isEmpty()) {
+            LOG.info("No source roots to unmark");
+            return;
+        }
+
+        com.intellij.openapi.application.ApplicationManager.getApplication().runWriteAction(() -> {
+            try {
+                Module[] modules = ModuleManager.getInstance(project).getModules();
+                Set<String> removedDirs = new HashSet<>();
+
+                for (String dirPath : markedSourceRoots) {
+                    File dir = new File(dirPath);
+                    boolean removed = false;
+
+                    for (Module module : modules) {
+                        if (removeSourceRootFromModule(module, dir)) {
+                            removed = true;
+                        }
+                    }
+
+                    if (removed) {
+                        removedDirs.add(dirPath);
+                    }
+                }
+
+                markedSourceRoots.removeAll(removedDirs);
+                LOG.info("Unmarked " + removedDirs.size() + " source directories");
+
+            } catch (Exception e) {
+                LOG.error("Error unmarking all source roots", e);
+            }
+        });
     }
 }

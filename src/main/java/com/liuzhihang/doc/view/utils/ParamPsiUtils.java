@@ -7,6 +7,7 @@ import com.intellij.psi.util.PsiTypesUtil;
 import com.intellij.psi.util.PsiUtil;
 import com.liuzhihang.doc.view.constant.FieldTypeConstant;
 import com.liuzhihang.doc.view.dto.Body;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -32,7 +33,10 @@ public class ParamPsiUtils {
      */
     public static void buildBodyParam(PsiField field, Map<String, PsiType> genericsMap, Body parent, Map<String, Boolean> parentChildPair) {
 
-        String pair = parent.getType() + "_" + field.getName();
+        String type1 = parent.getType();
+        String qualifiedNameForClassType = parent.getQualifiedNameForClassType();
+        String type2 = ObjectUtils.isEmpty(type1)?qualifiedNameForClassType:type1;
+        String pair = type2 + "_" + field.getName();
         if (parentChildPair.containsKey(pair)) {
             return;
         }
@@ -92,7 +96,6 @@ public class ParamPsiUtils {
 
         // 提前替换字段比如 T -> UserDTO   List<T> -> List<UserDTO>
         // 如果是泛型, 且泛型字段是当前字段, 将当前字段类型替换为泛型类型, 替换完之后重新设置 body 的 type
-
         type = replaceFieldType(genericsMap, type);
         String presentableText = type.getPresentableText();
         body.setType(presentableText);
@@ -181,7 +184,7 @@ public class ParamPsiUtils {
             return;
         }
 
-        PsiField[] allFields = childClass.getAllFields();
+//        PsiField[] allFields = childClass.getAllFields();
 
         for (PsiField psiField : childClass.getAllFields()) {
             if (!DocViewUtils.isExcludeField(psiField)) {
@@ -219,6 +222,8 @@ public class ParamPsiUtils {
             return genericsMap.get(type.getPresentableText());
         }
 
+        //todo
+        //有时候拿不到泛型的类型
         // 当前字段含有泛型 List<T> -> List<UserDTO>
         PsiClass fieldClass = PsiUtil.resolveClassInClassTypeOnly(type);
 
@@ -376,6 +381,7 @@ public class ParamPsiUtils {
             }
 
             // 如果是泛型, 且泛型字段是当前字段, 将当前字段类型替换为泛型类型
+            //又一个替换泛型？
             type = replaceFieldType(genericMap, type);
 
             // 引用类型
@@ -523,7 +529,6 @@ public class ParamPsiUtils {
             PsiClass psiClass = PsiUtil.resolveClassInType(returnType);
             if (psiClass != null) {
                 root.setQualifiedNameForClassType(psiClass.getQualifiedName());
-
                 // Map 类型处理
                 if (InheritanceUtil.isInheritor(psiClass, CommonClassNames.JAVA_UTIL_COLLECTION)) {
                     Body collectionBody = new Body();
@@ -537,7 +542,6 @@ public class ParamPsiUtils {
                     PsiType[] parameters = psiClassType.getParameters();
                     if (parameters.length != 0) {
                         PsiType psiType = parameters[0];
-
                         if (psiType instanceof PsiPrimitiveType || FieldTypeConstant.FIELD_TYPE.containsKey(psiType.getPresentableText())) {
                             return root;
                         }
@@ -554,6 +558,7 @@ public class ParamPsiUtils {
                 }
             }
         }
+        LocalSourceJarProcessor.unmarkAllSourceRootDirectly();
         return root;
     }
 
