@@ -121,12 +121,13 @@ public class DocViewData {
 
         //请求参数
         this.requestBodyDataList = buildBodyDataList(docView.getReqBody().getChildList());
-        this.requestBody = settings.getSeparateParam() ? separateParamMarkdown(requestBodyDataList) : paramMarkdown(requestBodyDataList, ParamTypeEnum.REQUEST_BODY);
+        this.requestBody = settings.getSeparateParam() ? separateParamMarkdown(requestBodyDataList,"Request") : paramMarkdown(requestBodyDataList, ParamTypeEnum.REQUEST_BODY);
+
         this.requestExample = requestExample(docView);
 
         //返回参数
         this.responseParamDataList = buildBodyDataList(docView.getRespBody().getChildList());
-        this.responseParam = settings.getSeparateParam() ? separateParamMarkdown(responseParamDataList) : paramMarkdown(responseParamDataList,ParamTypeEnum.RESPONSE_PARAM);
+        this.responseParam = settings.getSeparateParam() ? separateParamMarkdown(responseParamDataList,"Response") : paramMarkdown(responseParamDataList,ParamTypeEnum.RESPONSE_PARAM);
         this.responseExample = respBodyExample(docView.getRespExample());
 
     }
@@ -286,39 +287,67 @@ public class DocViewData {
     /**
      * 切分多个展示.多个实体
      */
-    private static String separateParamMarkdown(List<DocViewParamData> dataList) {
-        if (CollectionUtils.isEmpty(dataList)) {
-            return "";
-        }
-        List<DocViewParamData> paramDataList = new ArrayList<>();
+    private static String separateParamMarkdown(List<DocViewParamData> dataList,String type) {
 
-        StringBuilder builder = new StringBuilder();
-        builder.append("|参数名|类型|必选|可筛选|可更新|描述|版本|\n")
-                .append("|:-----|:-----|:-----|:-----|:-----|:-----|:-----|\n");
-        for (DocViewParamData data : dataList) {
-            if(data.isIfIgnoreRead()){
-                continue;
+        if(type.equals("Request")) {
+            if (CollectionUtils.isEmpty(dataList)) {
+                return "";
             }
-            builder.append("|").append(data.getName())
-                    .append("|").append(data.getType())
-                    .append("|").append(data.getRequired() ? "是" : "否")
-                    .append("|").append(data.getFilterable()? "是" : "否")
-                    .append("|").append(data.getUpdateable() ? "是" : "否")
-                    .append("|").append(data.getDesc())
-                    .append("|").append(Arrays.stream(new String[]{data.getSince(), data.getVersion()}).filter(StringUtils::isNotBlank).collect(Collectors.joining("-")))
-                    .append("|").append("\n");
-            if (CollectionUtils.isNotEmpty(data.getChildList())) {
-                paramDataList.add(data);
+            List<DocViewParamData> paramDataList = new ArrayList<>();
+
+            StringBuilder builder = new StringBuilder();
+            builder.append("|参数名|类型|必选|可筛选|可更新|描述|版本|\n")
+                    .append("|:-----|:-----|:-----|:-----|:-----|:-----|:-----|\n");
+            for (DocViewParamData data : dataList) {
+                if (data.isIfIgnoreRead()) {
+                    continue;
+                }
+                builder.append("|").append(data.getName())
+                        .append("|").append(data.getType())
+                        .append("|").append(data.getRequired() ? "是" : "否")
+                        .append("|").append(data.getFilterable() ? "是" : "否")
+                        .append("|").append(data.getUpdateable() ? "是" : "否")
+                        .append("|").append(data.getDesc())
+                        .append("|").append(Arrays.stream(new String[]{data.getSince(), data.getVersion()}).filter(StringUtils::isNotBlank).collect(Collectors.joining("-")))
+                        .append("|").append("\n");
+                if (CollectionUtils.isNotEmpty(data.getChildList())) {
+                    paramDataList.add(data);
+                }
             }
+            builder.append(separateSubParamMarkdown(paramDataList,type));
+            return builder.toString();
+        }else {
+            if (CollectionUtils.isEmpty(dataList)) {
+                return "";
+            }
+            List<DocViewParamData> paramDataList = new ArrayList<>();
+
+            StringBuilder builder = new StringBuilder();
+            builder.append("|参数名|类型|描述|版本|\n")
+                    .append("|:-----|:-----|:-----|:-----|\n");
+            for (DocViewParamData data : dataList) {
+                if (data.isIfIgnoreRead()) {
+                    continue;
+                }
+                builder.append("|").append(data.getName())
+                        .append("|").append(data.getType())
+
+                        .append("|").append(data.getDesc())
+                        .append("|").append(Arrays.stream(new String[]{data.getSince(), data.getVersion()}).filter(StringUtils::isNotBlank).collect(Collectors.joining("-")))
+                        .append("|").append("\n");
+                if (CollectionUtils.isNotEmpty(data.getChildList())) {
+                    paramDataList.add(data);
+                }
+            }
+            builder.append(separateSubParamMarkdown(paramDataList,type));
+            return builder.toString();
         }
-        builder.append(separateSubParamMarkdown(paramDataList));
-        return builder.toString();
     }
 
     /**
      * 构造子的参数 Markdown 实体
      */
-    private static String separateSubParamMarkdown(List<DocViewParamData> dataList) {
+    private static String separateSubParamMarkdown(List<DocViewParamData> dataList,String type) {
         if (CollectionUtils.isEmpty(dataList)) {
             return "";
         }
@@ -332,7 +361,7 @@ public class DocViewData {
                     DocViewParamData docViewParamData = childList.get(0);
                     if (docViewParamData.isCollection()) {
                         builder.append("\n- ").append(docViewParamData.getType()).append(" ").append(docViewParamData.getName()).append("\n\n");
-                        builder.append(separateParamMarkdown(docViewParamData.getChildList()));
+                        builder.append(separateParamMarkdown(docViewParamData.getChildList(),type));
                         continue;
                     }
                 }
@@ -340,7 +369,7 @@ public class DocViewData {
                     DocViewParamData docViewParamData = childList.get(1);
                     if (docViewParamData.isMap()) {
                         builder.append("\n- ").append(docViewParamData.getType()).append(" ").append(docViewParamData.getName()).append("\n\n");
-                        builder.append(separateParamMarkdown(docViewParamData.getChildList()));
+                        builder.append(separateParamMarkdown(docViewParamData.getChildList(),type));
                         continue;
                     }
                 }
@@ -348,7 +377,7 @@ public class DocViewData {
 
 
             builder.append("\n- ").append(data.getType()).append(" ").append(data.getName()).append("\n\n");
-            builder.append(separateParamMarkdown(data.getChildList()));
+            builder.append(separateParamMarkdown(data.getChildList(),type));
         }
 
         return builder.toString();
@@ -366,6 +395,11 @@ public class DocViewData {
         //请求参数
         if(paramType.equals(ParamTypeEnum.REQUEST_PARAM) || paramType.equals(ParamTypeEnum.REQUEST_BODY)) {
             for (DocViewParamData data : dataList) {
+                //忽略写入的花就不展示到请求param
+                boolean ifIgnoreWrite = data.isIfIgnoreWrite();
+                if(ifIgnoreWrite){
+                    continue;
+                }
                 builder.append("|").append(data.getPrefixSymbol1()).append(data.getPrefixSymbol2()).append(data.getName())
                         .append("|").append(data.getType())
                         .append("|").append(data.getRequired() ? "是" : "否")
@@ -382,7 +416,6 @@ public class DocViewData {
 
             //返回参数
             for (DocViewParamData data : dataList) {
-
                 builder.append("|").append(data.getPrefixSymbol1()).append(data.getPrefixSymbol2()).append(data.getName())
                         .append("|").append(data.getType())
                         .append("|").append(data.getRequired() ? "是" : "否")
@@ -460,6 +493,8 @@ public class DocViewData {
 
             data.setJson(param.isJson());
             data.setExist(param.isExist());
+            data.setIfIgnoreWrite(param.isIfIgnoreWrite());
+            data.setIfIgnoreRead(param.isIfIgnoreRead());
 
             data.setDesc(StringUtils.isNotBlank(param.getDesc()) ? param.getDesc() : "");
 
@@ -520,6 +555,8 @@ public class DocViewData {
             data.setId(body.isId());
             data.setIfIgnoreWrite(body.isIfIgnoreWrite());
             data.setIfIgnoreRead(body.isIfIgnoreRead());
+            data.setUpdateable(body.getUpdateable());
+            data.setFilterable(body.getFilterable());
 
             data.setDesc(StringUtils.isNotBlank(body.getDesc()) ? body.getDesc() : "");
 

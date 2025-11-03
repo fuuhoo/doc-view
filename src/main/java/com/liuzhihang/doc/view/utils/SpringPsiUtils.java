@@ -463,6 +463,10 @@ public class SpringPsiUtils extends ParamPsiUtils {
         StringBuilder paramKV = new StringBuilder();
 
         for (Param param : requestParam) {
+            boolean ifIgnoreWrite = param.isIfIgnoreWrite();
+            if(ifIgnoreWrite) {
+                continue;
+            }
             paramKV.append("\n").append(param.getName()).append(":").append(param.getExample());
 //            paramKV.append("&").append(param.getName()).append("=").append(param.getExample());
 
@@ -578,6 +582,37 @@ public class SpringPsiUtils extends ParamPsiUtils {
         param.setJson(DocViewUtils.isJson(field));
         param.setExist(DocViewUtils.ifExist(field));
 
+
+        //body处理jsonignore
+        PsiAnnotation jsonProperty = field.getAnnotation("com.fasterxml.jackson.annotation.JsonIgnore");
+        // 1. 什么都没写
+        if (jsonProperty != null) {
+            // 2. 取 access = JsonProperty.Access.xxx
+            PsiAnnotationMemberValue accessValue =
+                    jsonProperty.findAttributeValue("access");
+            // 2.1 根本没写 access 属性
+            if (accessValue == null || accessValue instanceof PsiReferenceExpression == false) {
+                param.setIfIgnoreRead(true);
+                param.setIfIgnoreWrite(true);
+            }else {
+                // 2.2 拿到枚举常量名
+                String enumConst = ((PsiReferenceExpression) accessValue).getReferenceName();
+
+                switch (enumConst) {
+                    case "READ_ONLY":
+                        param.setIfIgnoreWrite(true);
+                        break;
+                    case "WRITE_ONLY":
+                        param.setIfIgnoreRead(true);
+                        break;
+                    default:
+                        System.out.println("默认读写");
+                }
+            }
+        }
+
+
+
         return param;
     }
 
@@ -614,6 +649,10 @@ public class SpringPsiUtils extends ParamPsiUtils {
         param.setRequired(DocViewUtils.isRequired(parameter));
         param.setFilterable(DocViewUtils.isFilterAble(parameter));
         param.setUpdateable(DocViewUtils.isUpdateAble(parameter));
+
+
+//        param.setIfIgnoreWrite();
+//        param.setIfIgnoreRead();
 
 
         param.setName(parameter.getName());

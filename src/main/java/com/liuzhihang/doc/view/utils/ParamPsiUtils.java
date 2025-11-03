@@ -51,10 +51,15 @@ public class ParamPsiUtils {
         body.setType(type.getPresentableText());
         body.setDesc(DocViewUtils.fieldDesc(field));
 
+        Boolean b = Boolean.valueOf(DocViewUtils.isUpdateAble(field));
+
+        body.setFilterable(Boolean.valueOf(DocViewUtils.isFilterAble(field)));
+
+        body.setUpdateable(Boolean.valueOf(DocViewUtils.isUpdateAble(field)));
+
 
         //body处理jsonignore
         PsiAnnotation jsonProperty = field.getAnnotation("com.fasterxml.jackson.annotation.JsonIgnore");
-
         // 1. 什么都没写
         if (jsonProperty != null) {
             // 2. 取 access = JsonProperty.Access.xxx
@@ -558,7 +563,7 @@ public class ParamPsiUtils {
                 }
             }
         }
-        LocalSourceJarProcessor.unmarkAllSourceRootDirectly();
+//        LocalSourceJarProcessor.unmarkAllSourceRootDirectly();
         return root;
     }
 

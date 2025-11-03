@@ -107,4 +107,18 @@ public class Body {
     private boolean ifIgnoreWrite=false ;
 
 
+    /**
+     * 是否可作为筛选条件
+     */
+    private Boolean filterable;
+
+
+    /**
+     * 是否可更新
+     */
+
+    private Boolean updateable;
+
+
+
 }
