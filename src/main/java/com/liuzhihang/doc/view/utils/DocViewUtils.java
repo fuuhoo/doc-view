@@ -422,15 +422,19 @@ public class DocViewUtils {
 
     }
 
+
+    //这里没有区分是唯一筛选参数还是传的对应
     public static boolean isRequired(@NotNull PsiParameter psiParameter) {
 
         Settings settings = Settings.getInstance(psiParameter.getProject());
 
         // 必填标识
+        //字段存在不为空的注解
         if (AnnotationUtil.isAnnotated(psiParameter, settings.getRequiredFieldAnnotation(), 0)) {
             return true;
         }
 
+        //这个是在参数里面有REQUEST_PARAM注解
         if (AnnotationUtil.isAnnotated(psiParameter, SpringConstant.REQUEST_PARAM, 0)) {
             PsiAnnotation annotation = psiParameter.getAnnotation(SpringConstant.REQUEST_PARAM);
             if (annotation != null) {
@@ -603,7 +607,10 @@ public class DocViewUtils {
             if (jsonPropertyAnnotation != null) {
                 PsiAnnotationMemberValue value = jsonPropertyAnnotation.findAttributeValue("value");
                 if (value != null && StringUtils.isNotBlank(value.getText())) {
-                    return value.getText().replace("\"", "");
+                    String name = value.getText().replace("\"", "");
+                    if(name!=""&&name!=""){
+                        return name;
+                    }
                 }
             }
             return field.getName();

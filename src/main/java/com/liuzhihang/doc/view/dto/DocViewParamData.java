@@ -46,6 +46,12 @@ public class DocViewParamData {
     private Boolean required;
 
 
+//    /**
+//     * 是否必须
+//     */
+//    private Boolean updateRequired;
+
+
     /**
      * 是否可以作为筛选条件
      */

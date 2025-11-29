@@ -379,7 +379,7 @@ public class SpringPsiUtils extends ParamPsiUtils {
     }
 
     /**
-     * 构建请求 body
+     * 构建请求body
      *
      * @param parameter 请求参数
      * @return Body

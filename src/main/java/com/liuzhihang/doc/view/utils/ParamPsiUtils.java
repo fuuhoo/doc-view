@@ -51,15 +51,13 @@ public class ParamPsiUtils {
         body.setType(type.getPresentableText());
         body.setDesc(DocViewUtils.fieldDesc(field));
 
-        Boolean b = Boolean.valueOf(DocViewUtils.isUpdateAble(field));
 
         body.setFilterable(Boolean.valueOf(DocViewUtils.isFilterAble(field)));
-
         body.setUpdateable(Boolean.valueOf(DocViewUtils.isUpdateAble(field)));
 
 
         //body处理jsonignore
-        PsiAnnotation jsonProperty = field.getAnnotation("com.fasterxml.jackson.annotation.JsonIgnore");
+        PsiAnnotation jsonProperty = field.getAnnotation("com.fasterxml.jackson.annotation.JsonProperty");
         // 1. 什么都没写
         if (jsonProperty != null) {
             // 2. 取 access = JsonProperty.Access.xxx
@@ -85,6 +83,19 @@ public class ParamPsiUtils {
                 }
             }
         }
+        //存在ignore字段
+        PsiAnnotation jsonIgnore = field.getAnnotation("com.fasterxml.jackson.annotation.JsonIgnore");
+        if (jsonIgnore != null) {
+            PsiAnnotationMemberValue value =
+                    jsonIgnore.findAttributeValue("value");
+            if(value != null) {
+                if(value.equals(true)){
+                    body.setIfIgnoreWrite(true);
+                    body.setIfIgnoreRead(true);
+                }
+            }
+        }
+
 
 
         body.setJson(DocViewUtils.isJson(field));

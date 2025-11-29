@@ -4,14 +4,12 @@ import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiClass;
 import com.liuzhihang.doc.view.config.Settings;
 import com.liuzhihang.doc.view.config.TemplateSettings;
-import com.liuzhihang.doc.view.constant.FieldTypeConstant;
 import com.liuzhihang.doc.view.enums.FrameworkEnum;
 import com.liuzhihang.doc.view.enums.ParamTypeEnum;
 import com.liuzhihang.doc.view.utils.SpringPsiUtils;
 import com.liuzhihang.doc.view.utils.VelocityUtils;
 import lombok.Data;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -19,8 +17,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -95,7 +91,6 @@ public class DocViewData {
     private final String responseParam;
 
 
-
     /**
      * 返回示例
      */
@@ -121,13 +116,15 @@ public class DocViewData {
 
         //请求参数
         this.requestBodyDataList = buildBodyDataList(docView.getReqBody().getChildList());
-        this.requestBody = settings.getSeparateParam() ? separateParamMarkdown(requestBodyDataList,"Request") : paramMarkdown(requestBodyDataList, ParamTypeEnum.REQUEST_BODY);
+        //是否独立实体
+        //只考虑独立实体的，好展示
+        this.requestBody = settings.getSeparateParam() ? separateParamMarkdown(requestBodyDataList, "Request", ParamTypeEnum.REQUEST_BODY) : paramMarkdown(requestBodyDataList, ParamTypeEnum.REQUEST_BODY);
 
         this.requestExample = requestExample(docView);
 
         //返回参数
         this.responseParamDataList = buildBodyDataList(docView.getRespBody().getChildList());
-        this.responseParam = settings.getSeparateParam() ? separateParamMarkdown(responseParamDataList,"Response") : paramMarkdown(responseParamDataList,ParamTypeEnum.RESPONSE_PARAM);
+        this.responseParam = settings.getSeparateParam() ? separateParamMarkdown(responseParamDataList, "Response", ParamTypeEnum.RESPONSE_BODY) : paramMarkdown(responseParamDataList, ParamTypeEnum.RESPONSE_BODY);
         this.responseExample = respBodyExample(docView.getRespExample());
 
     }
@@ -145,53 +142,53 @@ public class DocViewData {
 
         String comment = SpringPsiUtils.classComment(psiClass);
 
-        String ddl="-- auto Generated\n" +
-                "-- DROP TABLE IF EXISTS "+className+";\n"+
-                "CREATE TABLE "+className+"(\n"+
-                toFiled(dataList)+
-                getIdFiled(dataList)+
-                ")"+
-                "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT '"+comment+"';";
+        String ddl = "-- auto Generated\n" +
+                "-- DROP TABLE IF EXISTS " + className + ";\n" +
+                "CREATE TABLE " + className + "(\n" +
+                toFiled(dataList) +
+                getIdFiled(dataList) +
+                ")" +
+                "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT '" + comment + "';";
 
         return ddl;
     }
 
 
-
-    public static String getIdFiled(List<DocViewParamData> dataList){
+    public static String getIdFiled(List<DocViewParamData> dataList) {
 
         for (DocViewParamData docViewParamData : dataList) {
             boolean id = docViewParamData.isId();
-            if(id){
-                return "  PRIMARY KEY ("+docViewParamData.getName()+")\n";
+            if (id) {
+                return "  PRIMARY KEY (" + docViewParamData.getName() + ")\n";
             }
-            }
+        }
 
         return "PRIMARY KEY (id)";
     }
-    public static String toFiled(List<DocViewParamData> dataList){
+
+    public static String toFiled(List<DocViewParamData> dataList) {
 
         StringBuilder stringBuilder = new StringBuilder();
 
         for (DocViewParamData docViewParamData : dataList) {
             //不存在数据库的不处理
             boolean exist = docViewParamData.isExist();
-            if(exist==false){
+            if (exist == false) {
                 continue;
             }
             String name = docViewParamData.getName();
-            name=SpringPsiUtils.camel4underline(name);
+            name = SpringPsiUtils.camel4underline(name);
             String type = docViewParamData.getType();
             Boolean required = docViewParamData.getRequired();
             String desc1 = docViewParamData.getDesc();
             boolean id = docViewParamData.isId();
 
-            stringBuilder.append("  "+name+" ");
+            stringBuilder.append("  " + name + " ");
 
             boolean json = docViewParamData.isJson();
 
-            if(json){
-                type="json";
+            if (json) {
+                type = "json";
             }
 
             String typeSql = dealType(type);
@@ -199,52 +196,86 @@ public class DocViewData {
 
             stringBuilder.append(typeSql);
 
-            if(!id) {
+            if (!id) {
                 if (required) {
                     stringBuilder.append(" NOT NULL");
                 }
-            }else {
+            } else {
                 stringBuilder.append("NOT NULL AUTO_INCREMENT");
             }
 
-            stringBuilder.append(" COMMENT '"+desc1+"'");
+            stringBuilder.append(" COMMENT '" + desc1 + "'");
 
 
             stringBuilder.append(",\n");
         }
 
-        return  stringBuilder.toString();
+        return stringBuilder.toString();
     }
 
-    private static String dealType(String type){
+    private static String dealType(String type) {
 
-        if(type.equals("String")){
-            return  " VARCHAR (50) DEFAULT '' ";
-        }else if(type.equals("Integer")){
-            return  " INT DEFAULT -1";
-        }else if(type.equals("Long")){
-            return  " BIGINT (15) ";
-        }else if(type.equals("Double")){
-            return  " DOUBLE DEFAULT 0.0 ";
-        }else if(type.equals("Float")){
-            return  " FLOAT DEFAULT 0.0 ";
-        }else if(type.equals("Boolean")){
-            return  " TINYINT DEFAULT -1 ";
-        }else if(type.equals("Date")){
-            return  " TIMESTAMP DEFAULT now()";
-        }else if(type.equals("Time")){
-            return  " TIMESTAMP DEFAULT now() ";
-        }else if(type.equals("Timestamp")) {
+        if (type.equals("String")) {
+            return " VARCHAR (50) DEFAULT '' ";
+        } else if (type.equals("Integer")) {
+            return " INT DEFAULT -1";
+        } else if (type.equals("Long")) {
+            return " BIGINT (15) ";
+        } else if (type.equals("Double")) {
+            return " DOUBLE DEFAULT 0.0 ";
+        } else if (type.equals("Float")) {
+            return " FLOAT DEFAULT 0.0 ";
+        } else if (type.equals("Boolean")) {
+            return " TINYINT DEFAULT -1 ";
+        } else if (type.equals("Date")) {
+            return " TIMESTAMP DEFAULT now()";
+        } else if (type.equals("Time")) {
             return " TIMESTAMP DEFAULT now() ";
-        }else if(type.equals("json")){
+        } else if (type.equals("Timestamp")) {
+            return " TIMESTAMP DEFAULT now() ";
+        } else if (type.equals("json")) {
             return " JSON ";
-        }else{
-            return  "VARCHAR (50) DEFAULT '' ";
+        } else {
+            return "VARCHAR (50) DEFAULT '' ";
         }
     }
 
+    /**
+     * dataList 转为 Markdown 文本
+     *
+     * @param dataList
+     * @return
+     */
+    @NotNull
+    public static String paramMarkdown(List<DocViewParamData> dataList, ParamTypeEnum paramType) {
+
+        if (CollectionUtils.isEmpty(dataList)) {
+            return "";
+        }
+
+        //param作为查询筛选条件参数，只展示可筛选的即可
+        //body里面一般作为上传的参数，也就是只保留新增必选和是否可更新即可
+
+        if (paramType.equals(ParamTypeEnum.REQUEST_PARAM)) {
+            return "|参数名|类型|必填(筛选时只有唯一条件起作用)|可筛选|描述|版本|\n"
+                    + "|:-----|:-----|:-----|:-----|:-----|:-----|\n"
+                    + paramMarkdownContent(dataList, paramType);
+        } else if (paramType.equals(ParamTypeEnum.REQUEST_BODY)) {
+            return "|参数名|类型|新增必选|可更新|描述|版本|\n"
+                    + "|:-----|:-----|:-----|:-----|:-----|:-----|\n"
+                    + paramMarkdownContent(dataList, paramType);
+        } else if (paramType.equals(ParamTypeEnum.RESPONSE_BODY)) {
+            return "|参数名|类型|描述|版本|\n"
+                    + "|:-----|:-----|:-----|:-----|:-----|\n"
+                    + paramMarkdownContent(dataList, paramType);
+        } else {
+            return "|参数名|类型|描述|版本|\n"
+                    + "|:-----|:-----|:-----|:-----|\n";
+        }
+    }
 
     //生成markdown
+
     public static String markdownText(Project project, DocView docView) {
 
         DocViewData docViewData = new DocViewData(docView);
@@ -258,65 +289,73 @@ public class DocViewData {
     }
 
     /**
-     * dataList 转为 Markdown 文本
-     *
-     * @param dataList
-     * @return
-     */
-    @NotNull
-    public static String paramMarkdown(List<DocViewParamData> dataList,ParamTypeEnum paramType) {
-
-        if (CollectionUtils.isEmpty(dataList)) {
-            return "";
-        }
-
-
-
-        if(paramType.equals(ParamTypeEnum.REQUEST_PARAM) || paramType.equals(ParamTypeEnum.REQUEST_BODY)) {
-
-            return "|参数名|类型|必选|可筛选|可更新|描述|版本|\n"
-                    + "|:-----|:-----|:-----|:-----|:-----|:-----|:-----|\n"
-                    + paramMarkdownContent(dataList, paramType);
-        }else  {
-            return "|参数名|类型|必选|描述|版本|\n"
-                    + "|:-----|:-----|:-----|:-----|:-----|\n"
-                    + paramMarkdownContent(dataList, paramType);
-        }
-    }
-
-    /**
      * 切分多个展示.多个实体
+     * Param
      */
-    private static String separateParamMarkdown(List<DocViewParamData> dataList,String type) {
+    private static String separateParamMarkdown(List<DocViewParamData> dataList, String type, ParamTypeEnum paramType) {
 
-        if(type.equals("Request")) {
+        //实体类分体的情况下
+        if (type.equals("Request")) {
             if (CollectionUtils.isEmpty(dataList)) {
                 return "";
             }
             List<DocViewParamData> paramDataList = new ArrayList<>();
 
             StringBuilder builder = new StringBuilder();
-            builder.append("|参数名|类型|必选|可筛选|可更新|描述|版本|\n")
-                    .append("|:-----|:-----|:-----|:-----|:-----|:-----|:-----|\n");
-            for (DocViewParamData data : dataList) {
-                if (data.isIfIgnoreRead()) {
-                    continue;
+
+            if (paramType.equals(ParamTypeEnum.REQUEST_PARAM)) {
+                builder.append("|参数名|类型|可筛选|描述|版本|\n")
+                        .append("|:-----|:-----|:-----|:-----|:-----|\n");
+                for (DocViewParamData data : dataList) {
+                    //前端不能传
+                    if (data.isIfIgnoreRead()) {
+                        continue;
+                    }
+                    //不可筛选不要
+                    if (!data.getFilterable()) {
+                        continue;
+                    }
+                    builder.append("|").append(data.getName())
+                            .append("|").append(data.getType())
+                            .append("|").append(data.getFilterable() ? "是" : "否")
+                            .append("|").append(data.getDesc())
+                            .append("|").append(Arrays.stream(new String[]{data.getSince(), data.getVersion()}).filter(StringUtils::isNotBlank).collect(Collectors.joining("-")))
+                            .append("|").append("\n");
+                    if (CollectionUtils.isNotEmpty(data.getChildList())) {
+                        paramDataList.add(data);
+                    }
                 }
-                builder.append("|").append(data.getName())
-                        .append("|").append(data.getType())
-                        .append("|").append(data.getRequired() ? "是" : "否")
-                        .append("|").append(data.getFilterable() ? "是" : "否")
-                        .append("|").append(data.getUpdateable() ? "是" : "否")
-                        .append("|").append(data.getDesc())
-                        .append("|").append(Arrays.stream(new String[]{data.getSince(), data.getVersion()}).filter(StringUtils::isNotBlank).collect(Collectors.joining("-")))
-                        .append("|").append("\n");
-                if (CollectionUtils.isNotEmpty(data.getChildList())) {
-                    paramDataList.add(data);
+                builder.append(separateSubParamMarkdown(paramDataList, type, paramType));
+
+
+            } else if (paramType.equals(ParamTypeEnum.REQUEST_BODY)) {
+
+                builder.append("|参数名|类型|新增必选|可更新|描述|版本|\n")
+                        .append("|:-----|:-----|:-----|:-----|:-----|:-----|\n");
+                for (DocViewParamData data : dataList) {
+                    //前端不能写
+                    if (data.isIfIgnoreWrite()) {
+                        continue;
+                    }
+                    builder.append("|").append(data.getName())
+                            .append("|").append(data.getType())
+                            .append("|").append(data.getRequired() ? "是" : "否")
+                            .append("|").append(data.getUpdateable() ? "是" : "否")
+                            .append("|").append(data.getDesc())
+                            .append("|").append(Arrays.stream(new String[]{data.getSince(), data.getVersion()}).filter(StringUtils::isNotBlank).collect(Collectors.joining("-")))
+                            .append("|").append("\n");
+                    if (CollectionUtils.isNotEmpty(data.getChildList())) {
+                        paramDataList.add(data);
+                    }
                 }
+                builder.append(separateSubParamMarkdown(paramDataList, type, paramType));
+
             }
-            builder.append(separateSubParamMarkdown(paramDataList,type));
+
+
             return builder.toString();
-        }else {
+        } else {
+            //返回的参数
             if (CollectionUtils.isEmpty(dataList)) {
                 return "";
             }
@@ -339,7 +378,7 @@ public class DocViewData {
                     paramDataList.add(data);
                 }
             }
-            builder.append(separateSubParamMarkdown(paramDataList,type));
+            builder.append(separateSubParamMarkdown(paramDataList, type, paramType));
             return builder.toString();
         }
     }
@@ -347,7 +386,7 @@ public class DocViewData {
     /**
      * 构造子的参数 Markdown 实体
      */
-    private static String separateSubParamMarkdown(List<DocViewParamData> dataList,String type) {
+    private static String separateSubParamMarkdown(List<DocViewParamData> dataList, String type, ParamTypeEnum paramType) {
         if (CollectionUtils.isEmpty(dataList)) {
             return "";
         }
@@ -361,7 +400,7 @@ public class DocViewData {
                     DocViewParamData docViewParamData = childList.get(0);
                     if (docViewParamData.isCollection()) {
                         builder.append("\n- ").append(docViewParamData.getType()).append(" ").append(docViewParamData.getName()).append("\n\n");
-                        builder.append(separateParamMarkdown(docViewParamData.getChildList(),type));
+                        builder.append(separateParamMarkdown(docViewParamData.getChildList(), type, paramType));
                         continue;
                     }
                 }
@@ -369,7 +408,7 @@ public class DocViewData {
                     DocViewParamData docViewParamData = childList.get(1);
                     if (docViewParamData.isMap()) {
                         builder.append("\n- ").append(docViewParamData.getType()).append(" ").append(docViewParamData.getName()).append("\n\n");
-                        builder.append(separateParamMarkdown(docViewParamData.getChildList(),type));
+                        builder.append(separateParamMarkdown(docViewParamData.getChildList(), type, paramType));
                         continue;
                     }
                 }
@@ -377,7 +416,7 @@ public class DocViewData {
 
 
             builder.append("\n- ").append(data.getType()).append(" ").append(data.getName()).append("\n\n");
-            builder.append(separateParamMarkdown(data.getChildList(),type));
+            builder.append(separateParamMarkdown(data.getChildList(), type, paramType));
         }
 
         return builder.toString();
@@ -387,43 +426,58 @@ public class DocViewData {
     /**
      * 表格内数据
      */
-    public static StringBuilder paramMarkdownContent(List<DocViewParamData> dataList,ParamTypeEnum paramType) {
+    public static StringBuilder paramMarkdownContent(List<DocViewParamData> dataList, ParamTypeEnum paramType) {
 
         StringBuilder builder = new StringBuilder();
 
 
         //请求参数
-        if(paramType.equals(ParamTypeEnum.REQUEST_PARAM) || paramType.equals(ParamTypeEnum.REQUEST_BODY)) {
+        if (paramType.equals(ParamTypeEnum.REQUEST_PARAM)) {
             for (DocViewParamData data : dataList) {
-                //忽略写入的花就不展示到请求param
+                //忽略写入的话就不展示到请求param
                 boolean ifIgnoreWrite = data.isIfIgnoreWrite();
-                if(ifIgnoreWrite){
+                if (ifIgnoreWrite) {
+                    continue;
+                }
+                builder.append("|").append(data.getPrefixSymbol1()).append(data.getPrefixSymbol2()).append(data.getName())
+                        .append("|").append(data.getType())
+                        .append("|").append(data.getRequired())
+                        .append("|").append(data.getFilterable() ? "是" : "否")
+                        .append("|").append(data.getDesc())
+                        .append("|").append(Arrays.stream(new String[]{data.getSince(), data.getVersion()}).filter(StringUtils::isNotBlank).collect(Collectors.joining("-")))
+                        .append("|").append("\n");
+                if (CollectionUtils.isNotEmpty(data.getChildList())) {
+                    builder.append(paramMarkdownContent(data.getChildList(), paramType));
+                }
+            }
+        } else if (paramType.equals(ParamTypeEnum.REQUEST_BODY)) {
+            for (DocViewParamData data : dataList) {
+                //忽略写入的话就不展示到请求param
+                boolean ifIgnoreWrite = data.isIfIgnoreWrite();
+                if (ifIgnoreWrite) {
                     continue;
                 }
                 builder.append("|").append(data.getPrefixSymbol1()).append(data.getPrefixSymbol2()).append(data.getName())
                         .append("|").append(data.getType())
                         .append("|").append(data.getRequired() ? "是" : "否")
-                        .append("|").append(data.getFilterable() ? "是" : "否")
                         .append("|").append(data.getUpdateable() ? "是" : "否")
                         .append("|").append(data.getDesc())
                         .append("|").append(Arrays.stream(new String[]{data.getSince(), data.getVersion()}).filter(StringUtils::isNotBlank).collect(Collectors.joining("-")))
                         .append("|").append("\n");
                 if (CollectionUtils.isNotEmpty(data.getChildList())) {
-                    builder.append(paramMarkdownContent(data.getChildList(),paramType));
+                    builder.append(paramMarkdownContent(data.getChildList(), paramType));
                 }
             }
-        }else{
-
+        } else if (paramType.equals(ParamTypeEnum.RESPONSE_BODY)) {
             //返回参数
             for (DocViewParamData data : dataList) {
                 builder.append("|").append(data.getPrefixSymbol1()).append(data.getPrefixSymbol2()).append(data.getName())
                         .append("|").append(data.getType())
-                        .append("|").append(data.getRequired() ? "是" : "否")
                         .append("|").append(data.getDesc())
                         .append("|").append(Arrays.stream(new String[]{data.getSince(), data.getVersion()}).filter(StringUtils::isNotBlank).collect(Collectors.joining("-")))
                         .append("|").append("\n");
                 if (CollectionUtils.isNotEmpty(data.getChildList())) {
-                    builder.append(paramMarkdownContent(data.getChildList(),paramType));
+                    builder.append(paramMarkdownContent(data.getChildList(), paramType));
                 }
             }
 
@@ -529,8 +583,9 @@ public class DocViewData {
 
     /**
      * 请求参数或者返回参数都在这
-     *
+     * <p>
      * body转DocViewParamData
+     *
      * @param bodyList
      * @param prefixSymbol1,
      * @param prefixSymbol2
