@@ -2,10 +2,14 @@ package com.liuzhihang.doc.view.dto;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiField;
+import com.intellij.psi.PsiType;
+import com.intellij.psi.util.PsiUtil;
 import com.liuzhihang.doc.view.config.Settings;
 import com.liuzhihang.doc.view.config.TemplateSettings;
 import com.liuzhihang.doc.view.enums.FrameworkEnum;
 import com.liuzhihang.doc.view.enums.ParamTypeEnum;
+import com.liuzhihang.doc.view.utils.DocViewUtils;
 import com.liuzhihang.doc.view.utils.SpringPsiUtils;
 import com.liuzhihang.doc.view.utils.VelocityUtils;
 import lombok.Data;
@@ -13,9 +17,11 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import com.intellij.psi.util.PsiClassUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -142,15 +148,51 @@ public class DocViewData {
 
         String comment = SpringPsiUtils.classComment(psiClass);
 
+        //获取继承来的字段
+        List<PsiField> inheritedFields = getInheritedFields(psiClass);
+
+
+        List<DocViewParamData> superFiled = getSuperFiled(inheritedFields);
+
+
         String ddl = "-- auto Generated\n" +
                 "-- DROP TABLE IF EXISTS " + className + ";\n" +
                 "CREATE TABLE " + className + "(\n" +
                 toFiled(dataList) +
+                toFiled(superFiled) +
                 getIdFiled(dataList) +
                 ")" +
                 "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT '" + comment + "';";
 
         return ddl;
+    }
+
+
+    public static List<PsiField> getInheritedFields(PsiClass psiClass) {
+        List<PsiField> inheritedFields = new ArrayList<>();
+
+        // 1. 获取直接父类的字段
+        PsiClass superClass = psiClass.getSuperClass();
+        while (superClass != null) {
+            Collections.addAll(inheritedFields, superClass.getFields());
+            superClass = superClass.getSuperClass();
+        }
+
+        // 2. 获取接口的字段（如果需要）
+        for (PsiClass interfaceClass : psiClass.getInterfaces()) {
+            Collections.addAll(inheritedFields, interfaceClass.getFields());
+            // 递归获取接口继承的接口
+            addInterfaceFields(interfaceClass, inheritedFields);
+        }
+
+        return inheritedFields;
+    }
+
+    private static void addInterfaceFields(PsiClass interfaceClass, List<PsiField> fields) {
+        for (PsiClass parentInterface : interfaceClass.getInterfaces()) {
+            Collections.addAll(fields, parentInterface.getFields());
+            addInterfaceFields(parentInterface, fields);
+        }
     }
 
 
@@ -213,6 +255,26 @@ public class DocViewData {
         return stringBuilder.toString();
     }
 
+
+    public static List<DocViewParamData> getSuperFiled(List<PsiField> inheritedFields) {
+
+        if(inheritedFields==null){
+            return Collections.emptyList();
+        }
+        List<DocViewParamData> dataList=new ArrayList<>();
+        for (PsiField inheritedField : inheritedFields) {
+            DocViewParamData docViewParamData = new DocViewParamData();
+            docViewParamData.setName(inheritedField.getName());
+            docViewParamData.setType(inheritedField.getType().getPresentableText());
+            docViewParamData.setRequired(false);
+            docViewParamData.setDesc(DocViewUtils.fieldDesc(inheritedField));
+            docViewParamData.setId(false);
+            docViewParamData.setExist(true);
+            dataList.add(docViewParamData);
+        }
+        return dataList;
+    }
+
     private static String dealType(String type) {
 
         if (type.equals("String")) {
@@ -261,7 +323,7 @@ public class DocViewData {
                     + "|:-----|:-----|:-----|:-----|:-----|:-----|\n"
                     + paramMarkdownContent(dataList, paramType);
         } else if (paramType.equals(ParamTypeEnum.REQUEST_BODY)) {
-            return "|参数名|类型|新增必选|可更新|描述|版本|\n"
+            return "|参数名|类型|新增必选(id除外)|可更新|描述|版本|\n"
                     + "|:-----|:-----|:-----|:-----|:-----|:-----|\n"
                     + paramMarkdownContent(dataList, paramType);
         } else if (paramType.equals(ParamTypeEnum.RESPONSE_BODY)) {
@@ -330,7 +392,7 @@ public class DocViewData {
 
             } else if (paramType.equals(ParamTypeEnum.REQUEST_BODY)) {
 
-                builder.append("|参数名|类型|新增必选|可更新|描述|版本|\n")
+                builder.append("|参数名|类型|新增必选(id除外)|可更新|描述|版本|\n")
                         .append("|:-----|:-----|:-----|:-----|:-----|:-----|\n");
                 for (DocViewParamData data : dataList) {
                     //前端不能写
