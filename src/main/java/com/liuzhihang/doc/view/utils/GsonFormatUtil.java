@@ -35,6 +35,7 @@ public class GsonFormatUtil {
 //        Gson gson = new GsonBuilder().serializeNulls().create();
 
         Gson gson = new GsonBuilder()
+                .serializeNulls()
                 .setExclusionStrategies(new JacksonAnnotationExclusionStrategy())
                 .create();
 
@@ -49,6 +50,8 @@ public class GsonFormatUtil {
         try {
             StringWriter writer = new StringWriter();
             JsonWriter jsonWriter = newJsonWriter(Streams.writerForAppendable(Streams.writerForAppendable(writer)));
+            jsonWriter.setSerializeNulls(true);  // 包含null值
+
             gson.toJson(src, src.getClass(), jsonWriter);
             return writer.toString();
         } catch (IOException e) {

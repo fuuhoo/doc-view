@@ -193,6 +193,9 @@ public class SpringPsiUtils extends ParamPsiUtils {
         // controller 路径
         PsiAnnotation annotation = AnnotationUtil.findAnnotation(psiClass, SpringConstant.MYBATIS_TABLE_NAME);
 
+        if(annotation == null) {
+            return psiClass.getName();
+        }
         String stringValue = annotation.findAttributeValue("value") instanceof PsiLiteralValue ?
                 (String) ((PsiLiteralValue) annotation.findAttributeValue("value")).getValue() : null;
 
